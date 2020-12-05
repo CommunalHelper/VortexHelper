@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+
+<Sprites>
+
+  <FloorBoosterLeft path="objects/VortexHelper/floorBooster/" start="hot">
+    <Loop id="hot" path="fireRight" frames="0-7" delay="0.035"/>
+    <Anim id="ice" path="iceRight" frames="0*10" delay="0.08" goto="ice,ice,ice,ice,ice,iceShine"/>
+    <Anim id="iceShine" path="iceRight" frames="0-4" delay="0.08" goto="ice"/>
+  </FloorBoosterLeft>
+  <FloorBoosterMid path="objects/VortexHelper/floorBooster/" start="hot">
+    <Loop id="hot" path="fireMid" frames="0-7" delay="0.035"/>
+    <Anim id="ice" path="iceMid" frames="0*10" delay="0.08" goto="ice,ice,ice,ice,ice,iceShine"/>
+    <Anim id="iceShine" path="iceMid" frames="0-4" delay="0.08" goto="ice"/>
+  </FloorBoosterMid>
+  <FloorBoosterRight path="objects/VortexHelper/floorBooster/" start="hot">
+    <Loop id="hot" path="fireLeft" frames="0-7" delay="0.035"/>
+    <Anim id="ice" path="iceLeft" frames="0*10" delay="0.08" goto="ice,ice,ice,ice,ice,iceShine"/>
+    <Anim id="iceShine" path="iceLeft" frames="0-4" delay="0.08" goto="ice"/>
+  </FloorBoosterRight>
+
+</Sprites>

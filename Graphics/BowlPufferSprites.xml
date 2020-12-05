@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<Sprites>
+
+	<bowlPufferFish path="objects/" start="idle">
+		<Center/>
+		<Loop id="idle" path="VortexHelper/pufferBowl/idle" delay="0.08"/>
+		<Anim id="recover" path="VortexHelper/pufferBowl/recover" goto="idle" delay="0.06"/>
+		<Anim id="explode" path="puffer/explode" goto="hidden" delay="0.08"/>
+		<Loop id="hidden" path="puffer/hidden" delay="0.08"/>
+		<Loop id="idleNoBowl" path="puffer/idle" delay="0.08"/>
+		<Anim id="alert" path="puffer/alert" goto="alerted" delay="0.08"/>
+		<Loop id="alerted" path="puffer/alerted" delay="0.08"/>
+		<Anim id="unalert" path="puffer/alert" goto="idleNoBowl" delay="0.08" frames="1,0"/>
+	</bowlPufferFish>
+
+</Sprites>
