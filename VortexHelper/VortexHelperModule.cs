@@ -6,8 +6,6 @@ using MonoMod.Cil;
 using MonoMod.Utils;
 using System;
 using System.Collections;
-using System.Configuration;
-using System.Diagnostics.Eventing.Reader;
 using System.Reflection;
 
 namespace Celeste.Mod.VortexHelper
