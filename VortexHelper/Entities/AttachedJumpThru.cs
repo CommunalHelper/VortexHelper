@@ -14,6 +14,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         private int overrideSoundIndex = -1;
         private string overrideTexture;
         private StaticMover staticMover;
+        private Platform Platform;
         private Vector2 imageOffset;
 
         public Color EnabledColor = Color.White;
@@ -38,6 +39,7 @@ namespace Celeste.Mod.VortexHelper.Entities
             };
             Add(new StaticMover
             {
+                OnMove = OnMove,
                 OnShake = OnShake,
                 SolidChecker = IsRiding,
                 OnEnable = OnEnable,
@@ -46,11 +48,13 @@ namespace Celeste.Mod.VortexHelper.Entities
         }
         public override void Awake(Scene scene)
         {
+            base.Awake(scene);
             AreaData areaData = AreaData.Get(scene);
             string jumpthru = areaData.Jumpthru;
+            areaData.Jumpthru = jumpthru;
             if (!string.IsNullOrEmpty(overrideTexture) && !overrideTexture.Equals("default"))
             {
-                jumpthru = overrideTexture;
+                areaData.Jumpthru = overrideTexture;
             }
             if (overrideSoundIndex > 0)
             {
@@ -75,7 +79,7 @@ namespace Celeste.Mod.VortexHelper.Entities
                         break;
                 }
             }
-            MTexture mTexture = GFX.Game["objects/jumpthru/" + jumpthru];
+            MTexture mTexture = GFX.Game["objects/jumpthru/" + areaData.Jumpthru];
             int num = mTexture.Width / 8;
             for (int i = 0; i < columns; i++)
             {
@@ -84,12 +88,12 @@ namespace Celeste.Mod.VortexHelper.Entities
                 if (i == 0)
                 {
                     num2 = 0;
-                    num3 = ((!CollideCheck<Solid>(Position + new Vector2(-1f, 0f))) ? 1 : 0);
+                    num3 = (!CollideCheck<Solid>(Position + new Vector2(-1f, 0f))) ? 1 : 0;
                 }
                 else if (i == columns - 1)
                 {
                     num2 = num - 1;
-                    num3 = ((!CollideCheck<Solid>(Position + new Vector2(1f, 0f))) ? 1 : 0);
+                    num3 = (!CollideCheck<Solid>(Position + new Vector2(1f, 0f))) ? 1 : 0;
                 }
                 else
                 {
@@ -100,15 +104,31 @@ namespace Celeste.Mod.VortexHelper.Entities
                 image.X = i * 8;
                 Add(image);
             }
-            base.Awake(scene);
-            areaData.Jumpthru = jumpthru;
+            foreach (StaticMover component in scene.Tracker.GetComponents<StaticMover>())
+            {
+                if (component.IsRiding(this) && component.Platform == null)
+                {
+                    staticMovers.Add(component);
+                    component.Platform = this;
+                    if (component.OnAttach != null)
+                    {
+                        component.OnAttach(this);
+                    }
+                }
+            }
         }
         private bool IsRiding(Solid solid)
         {
             if (CollideCheck(solid, Position + Vector2.UnitX))
+            {
+                staticMover.Platform = Platform = solid;
                 return true;
+            }
             if (CollideCheck(solid, Position - Vector2.UnitX))
+            {
+                staticMover.Platform = Platform = solid;
                 return true;
+            }
             else return false;
         }
         public override void Render()
@@ -117,6 +137,13 @@ namespace Celeste.Mod.VortexHelper.Entities
             Position += imageOffset;
             base.Render();
             Position = position;
+        }
+        private void OnMove(Vector2 amount)
+        {
+            float moveH = amount.X;
+            float moveV = amount.Y;
+            MoveH(moveH);
+            MoveV(moveV);
         }
         public override void OnShake(Vector2 amount)
         {
@@ -150,7 +177,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         }
         public override void OnStaticMoverTrigger(StaticMover sm)
         {
-            staticMover.TriggerPlatform();
+            TriggerPlatform();
         }
         public override void Update()
         {
@@ -158,7 +185,14 @@ namespace Celeste.Mod.VortexHelper.Entities
             Player playerRider = GetPlayerRider();
             if (playerRider != null && playerRider.Speed.Y >= 0f)
             {
-                staticMover.TriggerPlatform();
+                TriggerPlatform();
+            }
+        }
+        private void TriggerPlatform()
+        {
+            if (Platform != null)
+            {
+                Platform.OnStaticMoverTrigger(staticMover);
             }
         }
     }
