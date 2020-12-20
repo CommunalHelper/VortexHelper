@@ -32,15 +32,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Celeste">
-      <HintPath>..\..\..\..\Desktop\Celeste\Celeste.exe</HintPath>
+      <HintPath>..\..\..\Celeste.exe</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="FNA">
-      <HintPath>..\..\..\..\Desktop\Celeste\FNA.dll</HintPath>
+      <HintPath>..\..\..\FNA.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MMHOOK_Celeste">
-      <HintPath>..\..\..\..\Desktop\Celeste\MMHOOK_Celeste.dll</HintPath>
+      <HintPath>..\..\..\MMHOOK_Celeste.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Cecil, Version=0.11.2.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
@@ -60,13 +60,13 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="MonoMod.Utils">
-      <HintPath>..\..\..\..\Desktop\Celeste\MonoMod.Utils.dll</HintPath>
+      <HintPath>..\..\..\MonoMod.Utils.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="YamlDotNet">
-      <HintPath>..\..\..\..\Desktop\Celeste\YamlDotNet.dll</HintPath>
+      <HintPath>..\..\..\YamlDotNet.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
