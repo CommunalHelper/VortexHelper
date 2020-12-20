@@ -9,6 +9,11 @@ namespace Celeste.Mod.VortexHelper.Entities
     [Tracked(false)]
     class FloorBooster : Entity
     {
+        private enum DisableMode
+        {
+            Disappear, ColorFade
+        }
+
         public Facings Facing;
         private Vector2 imageOffset;
         private SoundSource idleSfx;
@@ -21,6 +26,8 @@ namespace Celeste.Mod.VortexHelper.Entities
         public bool IceMode;
         private bool notCoreMode;
         public bool NoRefillsOnIce;
+
+        private DisableMode disableMode;
 
         public Color EnabledColor = Color.White;
         public Color DisabledColor = Color.Lerp(Color.White, Color.Black, 0.5f);
@@ -77,7 +84,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         private void OnEnable()
         {
             if(!IceMode) idleSfx.Play("event:/env/local/09_core/conveyor_idle");
-            Active = Collidable = true;
+            Active = Collidable = Visible = true;
             SetColor(EnabledColor);
         }
 
@@ -86,7 +93,11 @@ namespace Celeste.Mod.VortexHelper.Entities
             idleSfx.Stop();
             PlayActivateSfx(true);
             Active = Collidable = false;
-            SetColor(DisabledColor);
+            if (disableMode == DisableMode.ColorFade)
+                SetColor(DisabledColor);
+            else
+                Visible = false;
+                
         }
 
         private List<Sprite> BuildSprite(bool left)
@@ -132,7 +143,12 @@ namespace Celeste.Mod.VortexHelper.Entities
         }
         private bool IsRiding(Solid solid)
         {
-            return CollideCheckOutside(solid, Position + Vector2.UnitY);
+            if (CollideCheckOutside(solid, Position + Vector2.UnitY))
+            {
+                disableMode = (solid is CassetteBlock || solid is SwitchBlock) ? DisableMode.ColorFade : DisableMode.Disappear;
+                return true;
+            }
+            return false;
         }
         private void OnShake(Vector2 amount)
         {

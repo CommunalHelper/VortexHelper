@@ -48,6 +48,8 @@ namespace Celeste.Mod.VortexHelper
 
             VortexBumperSpriteBank = new SpriteBank(GFX.Game, "Graphics/VortexCustomBumperSprites.xml");
             VortexBumper.InitializeParticles();
+
+            BubbleWrapBlock.InitializeParticles();
         }
         public override void Load()
         {
