@@ -507,6 +507,15 @@ namespace Celeste.Mod.VortexHelper.Entities
 				}
 			}
 
+			foreach(Actor e in CollideAll<Actor>())
+            {
+				if(e is Puffer)
+				{
+					VortexHelperModule.Puffer_Explode.Invoke(e, new object[] { });
+					VortexHelperModule.Puffer_GotoGone.Invoke(e, new object[] { });
+				}
+            }
+
 			foreach (Solid e in CollideAll<Solid>())
 			{
 				// Temple Cracked Blocks

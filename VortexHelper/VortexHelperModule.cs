@@ -25,6 +25,8 @@ namespace Celeste.Mod.VortexHelper
         public static MethodInfo Spring_BounceAnimate = typeof(Spring).GetMethod("BounceAnimate", BindingFlags.Instance | BindingFlags.NonPublic);
         public static MethodInfo CrushBlock_OnDashed = typeof(CrushBlock).GetMethod("OnDashed", BindingFlags.Instance | BindingFlags.NonPublic);
         public static MethodInfo CoreModeToggle_OnPlayer = typeof(CoreModeToggle).GetMethod("OnPlayer", BindingFlags.Instance | BindingFlags.NonPublic);
+        public static MethodInfo Puffer_Explode = typeof(Puffer).GetMethod("Explode", BindingFlags.Instance | BindingFlags.NonPublic);
+        public static MethodInfo Puffer_GotoGone = typeof(Puffer).GetMethod("GotoGone", BindingFlags.Instance | BindingFlags.NonPublic);
 
         public static bool AllowPlayerDashRefills = true;
 
@@ -90,11 +92,6 @@ namespace Celeste.Mod.VortexHelper
             puffer.HitSpring(self);
             Spring_BounceAnimate.Invoke(self, new object[] { });
         }
-
-
-
-
-
 
         private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self)
         {
