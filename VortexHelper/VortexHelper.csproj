@@ -71,6 +71,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\AttachedJumpThru.cs" />
     <Compile Include="Entities\AutoFallingBlock.cs" />
     <Compile Include="Entities\BubbleWrapBlock.cs" />
     <Compile Include="Entities\BowlPuffer.cs" />
