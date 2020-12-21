@@ -119,14 +119,13 @@ namespace Celeste.Mod.VortexHelper.Entities
         }
         private bool IsRiding(Solid solid)
         {
-            if (CollideCheck(solid, Position + Vector2.UnitX))
+            if (CollideCheck(solid, Position + Vector2.UnitX) || CollideCheck(solid, Position - Vector2.UnitX))
             {
                 staticMover.Platform = Platform = solid;
-                return true;
-            }
-            if (CollideCheck(solid, Position - Vector2.UnitX))
-            {
-                staticMover.Platform = Platform = solid;
+                if (VisibleWhenDisabled = solid is CassetteBlock || solid is SwitchBlock)
+                {
+                    DisabledColor = Color.Lerp(Color.Black, Color.White, .4f);
+                }
                 return true;
             }
             else return false;
@@ -156,24 +155,31 @@ namespace Celeste.Mod.VortexHelper.Entities
             DisableStaticMovers();
             if (VisibleWhenDisabled)
             {
-                foreach (Component component in base.Components)
-                {
-                    Image image = component as Image;
-                    if (image != null)
-                    {
-                        image.Color = DisabledColor;
-                    }
-                }
+                SetColor(DisabledColor);
             }
             else
             {
                 Visible = false;
             }
         }
+
+        private void SetColor(Color color)
+        {
+            foreach (Component component in base.Components)
+            {
+                Image image = component as Image;
+                if (image != null)
+                {
+                    image.Color = color;
+                }
+            }
+        }
+
         private void OnEnable()
         {
             EnableStaticMovers();
             Active = (Visible = (Collidable = true));
+            SetColor(Color.White);
         }
         public override void OnStaticMoverTrigger(StaticMover sm)
         {
