@@ -1,7 +1,7 @@
 module VortexHelperBowlPuffer
 using ..Ahorn, Maple
 
-@mapdef Entity "VortexHelper/BowlPuffer" BowlPuffer(x::Integer, y::Integer, noRespawn::Bool = false)
+@mapdef Entity "VortexHelper/BowlPuffer" BowlPuffer(x::Integer, y::Integer, noRespawn::Bool = false, explodeTimer::Number = 1.0)
 
 const placements = Ahorn.PlacementDict(
     "Pufferfish Bowl (Vortex Helper)" => Ahorn.EntityPlacement(
