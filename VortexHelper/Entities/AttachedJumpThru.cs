@@ -1,6 +1,7 @@
 ﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
 
 namespace Celeste.Mod.VortexHelper.Entities
 {
@@ -139,8 +140,18 @@ namespace Celeste.Mod.VortexHelper.Entities
         {
             float moveH = amount.X;
             float moveV = amount.Y;
-            MoveH(moveH);
-            MoveV(moveV);
+
+            if (Platform is MoveBlock && new DynData<MoveBlock>(Platform as MoveBlock).Get<float>("speed") == 0f)
+            {
+                MoveHNaive(moveH);
+                MoveVNaive(moveV);
+            }
+
+            else
+            {
+                MoveH(moveH);
+                MoveV(moveV);
+            }
         }
         public override void OnShake(Vector2 amount)
         {
@@ -183,6 +194,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         {
             TriggerPlatform();
         }
+
         public override void Update()
         {
             base.Update();
