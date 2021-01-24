@@ -881,7 +881,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 							base.Top = Level.Bounds.Top + 4;
 							Speed.Y = 0f;
 						}
-						else if (base.Top > (float)Level.Bounds.Bottom)
+						else if (base.Top > (float)Level.Bounds.Bottom && !Level.Transitioning)
 						{
 							MoveV(-5);
 							Explode();
