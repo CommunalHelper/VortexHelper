@@ -123,7 +123,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 			return DashCollisionResults.Rebound;
 		}
 
-		private void Break()
+		public void Break()
         {
 			breakSfx.Play("event:/game/general/wall_break_stone");
 			for (int i = 0; (float)i < base.Width / 8f; i++)

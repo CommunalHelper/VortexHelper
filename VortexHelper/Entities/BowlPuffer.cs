@@ -92,6 +92,8 @@ namespace Celeste.Mod.VortexHelper.Entities
 		private Wiggler bounceWiggler;
 		private Vector2 scale;
 
+		private bool exploded = false;
+
 		private Circle pushRadius, detectRadius;
 
 		private Level Level;
@@ -454,16 +456,18 @@ namespace Celeste.Mod.VortexHelper.Entities
 			}
 		}
 
-		private void Explode()
+		private void Explode(bool playsound = true)
 		{
 			base.Collider = pushRadius;
-			Audio.Play("event:/new_content/game/10_farewell/puffer_splode", Position);
+			if(playsound) Audio.Play("event:/new_content/game/10_farewell/puffer_splode", Position);
 			puffer.Play("explode");
 			if (state == States.Crystal) ShatterBowl();
+			exploded = true;
 
 			// Yeah, there's a lot going in there.
 			DoEntityCustomInteraction();
 
+			exploded = false;
 			base.Collider = null;
 			Level level = SceneAs<Level>();
 			level.Shake();
@@ -481,7 +485,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 		{
 			// Player
 			Player player = CollideFirst<Player>();
-			if (player != null && !base.Scene.CollideCheck<Solid>(Position, player.Center))
+			if (player != null)
 			{
 				player.ExplodeLaunch(Position, snapUp: false, sidesOnly: true);
 			}
@@ -518,7 +522,19 @@ namespace Celeste.Mod.VortexHelper.Entities
 				{
 					VortexHelperModule.Puffer_Explode.Invoke(e, new object[] { });
 					VortexHelperModule.Puffer_GotoGone.Invoke(e, new object[] { });
+					continue;
 				}
+
+				if(e is BowlPuffer)
+                {
+					BowlPuffer e_ = e as BowlPuffer;
+					if (!e_.exploded && e_.state != States.Gone)
+					{
+						e_.GotoGone();
+						if (e_.state == States.Crystal) e_.ShatterBowl();
+						e_.Explode(false);
+					}
+                }
             }
 
 			foreach (Solid e in CollideAll<Solid>())
@@ -560,6 +576,12 @@ namespace Celeste.Mod.VortexHelper.Entities
 					VortexHelperModule.CrushBlock_OnDashed.Invoke(e as CrushBlock, new object[] { null, Calc.FourWayNormal(e.Center - Center) });
 					continue;
 				}
+
+				if(e is BubbleWrapBlock)
+                {
+					(e as BubbleWrapBlock).Break();
+					continue;
+                }
 
 				// Lightning Breaker Boxes
 				if(e is LightningBreakerBox)
@@ -628,7 +650,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 				Audio.Play("event:/new_content/game/10_farewell/puffer_reform", Position);
 			}
 			Speed = Vector2.Zero;
-			noGravityTimer = 0.25f;
+			if(!CollideCheck<Solid>(Position + Vector2.UnitY)) noGravityTimer = 0.25f;
 			state = States.Crystal;
 		}
 
@@ -766,7 +788,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 					if (fused)
 					{
 						if (explodeTimeLeft > 0f) explodeTimeLeft -= Engine.DeltaTime;
-						if(explodeTimeLeft < 0f)
+						if(explodeTimeLeft <= 0f)
                         {
 							GotoGone();
 							ShatterBowl();
@@ -779,9 +801,11 @@ namespace Celeste.Mod.VortexHelper.Entities
 					if (Hold.IsHeld)
 					{
 						prevLiftSpeed = Vector2.Zero;
+						noGravityTimer = 0f;
 					}
 					else
 					{
+						bool inWater = CollideCheck<Water>(Position + Vector2.UnitY * -8);
 						if (OnGround())
 						{
 							float target = (!OnGround(Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(Position - Vector2.UnitX * 3f) ? 0f : (-20f));
@@ -809,6 +833,10 @@ namespace Celeste.Mod.VortexHelper.Entities
 									Speed.Y = 0f;
 								}
 							}
+							if (inWater)
+							{
+								Speed.Y = Calc.Approach(Speed.Y, -30, 800f * Engine.DeltaTime * 0.8f);
+							}
 						}
 						else if (Hold.ShouldHaveGravity)
 						{
@@ -829,8 +857,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 							}
 							else
 							{
-								bool inWater = CollideCheck<Water>(Position + Vector2.UnitY * -8);
-								Speed.Y = Calc.Approach(Speed.Y, inWater ? -30f : 200f, num1 * Engine.DeltaTime * (inWater ? 0.8f : 1)) ;
+								Speed.Y = Calc.Approach(Speed.Y, inWater ? -30f : 200f, num1 * Engine.DeltaTime * (inWater ? 0.7f : 1));
 							}
 						}
 						previousPosition = base.ExactPosition;
@@ -1077,7 +1104,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 				Vector2 vector4 = Calc.AngleToVector(Calc.Angle(vector3, to) + eyeSpin * ((float)Math.PI * 2f) * 2f, 1f);
 				Vector2 vector5 = vector3 + new Vector2((float)Math.Round(vector4.X), (float)Math.Round(Calc.ClampedMap(vector4.Y, -1f, 1f, -1f, 2f)));
 				vector5.Y -= 10;
-				Draw.Point(vector5, Color.Black);
+				Draw.Point(vector5 + new Vector2(-1, 1), Color.Black);
 			}
 
 			if(fused && ExplodeTimer != 0.0f)

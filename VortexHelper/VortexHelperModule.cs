@@ -66,6 +66,8 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.Player.ctor += Player_ctor;
 
             On.Celeste.Spring.ctor_Vector2_Orientations_bool += Spring_orig;
+
+            On.Celeste.Puffer.Update += Puffer_Update;
         }
 
         public override void Unload()
@@ -81,6 +83,32 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.Player.ctor -= Player_ctor;
 
             On.Celeste.Spring.ctor_Vector2_Orientations_bool -= Spring_orig;
+
+            On.Celeste.Puffer.Update -= Puffer_Update;
+        }
+
+        private void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self)
+        {
+            orig(self);
+            if (!self.Collidable) return;
+            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>())
+            {
+                barrier.Collidable = true;
+            }
+
+            PufferBarrier collided = self.CollideFirst<PufferBarrier>();
+            if (collided != null)
+            {
+                collided.OnTouchPuffer();
+
+                Puffer_Explode.Invoke(self, new object[] { });
+                Puffer_GotoGone.Invoke(self, new object[] { });
+            }
+
+            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>())
+            {
+                barrier.Collidable = false;
+            }
         }
 
         private void Spring_orig(On.Celeste.Spring.orig_ctor_Vector2_Orientations_bool orig, Spring self, Vector2 position, Spring.Orientations orientation, bool playerCanUse)
