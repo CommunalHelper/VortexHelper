@@ -90,6 +90,20 @@ namespace Celeste.Mod.VortexHelper.Entities
 					SceneAs<Level>().DirectionalShake(Vector2.UnitY, 0.3f);
 					StartShaking();
 					LandParticles();
+					foreach (BubbleWrapBlock e in Scene.Tracker.GetEntities<BubbleWrapBlock>())
+					{
+						if (CollideCheck(e, Position + Vector2.UnitY))
+						{
+							e.Break();
+						}
+					}
+					foreach (ColorSwitch e in Scene.Tracker.GetEntities<ColorSwitch>())
+					{
+						if (CollideCheck(e, Position + Vector2.UnitY))
+						{
+							e.Switch(Vector2.UnitY);
+						}
+					}
 					yield return 0.2f;
 					StopShaking();
 				}

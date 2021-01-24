@@ -105,7 +105,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 			Draw.HollowRect(x - inflate, y - inflate, width + 2 * inflate, height + 2 * inflate, color);
         }
 
-		private DashCollisionResults Dashed(Player player, Vector2 direction)
+		public DashCollisionResults Dashed(Player player, Vector2 direction)
 		{
 			if (!SaveData.Instance.Assists.Invincible && player.CollideCheck<Spikes>())
 				return DashCollisionResults.NormalCollision;

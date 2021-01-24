@@ -68,6 +68,11 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.Spring.ctor_Vector2_Orientations_bool += Spring_orig;
 
             On.Celeste.Puffer.Update += Puffer_Update;
+
+            On.Celeste.FallingBlock.LandParticles += FallingBlock_LandParticles;
+
+            On.Celeste.CrushBlock.Update += CrushBlock_Update;
+            On.Celeste.CrushBlock.ctor_EntityData_Vector2 += CrushBlock_ctor_EntityData_Vector2;
         }
 
         public override void Unload()
@@ -85,6 +90,65 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.Spring.ctor_Vector2_Orientations_bool -= Spring_orig;
 
             On.Celeste.Puffer.Update -= Puffer_Update;
+
+            On.Celeste.FallingBlock.LandParticles -= FallingBlock_LandParticles;
+
+            On.Celeste.CrushBlock.Update -= CrushBlock_Update;
+            On.Celeste.CrushBlock.ctor_EntityData_Vector2 -= CrushBlock_ctor_EntityData_Vector2;
+        }
+
+        private void CrushBlock_ctor_EntityData_Vector2(On.Celeste.CrushBlock.orig_ctor_EntityData_Vector2 orig, CrushBlock self, EntityData data, Vector2 offset)
+        {
+            orig(self, data, offset);
+            new DynData<CrushBlock>(self).Set("oldCrushDir", Vector2.Zero);
+        }
+
+        private void CrushBlock_Update(On.Celeste.CrushBlock.orig_Update orig, CrushBlock self)
+        {
+            orig(self);
+            DynData<CrushBlock> data = new DynData<CrushBlock>(self);
+
+            Vector2 crushDir = data.Get<Vector2>("crushDir");
+            Vector2 oldCrushDir = data.Get<Vector2>("oldCrushDir");
+
+            if (oldCrushDir != Vector2.Zero && crushDir == Vector2.Zero)
+            {
+                // we hit something!
+                foreach (BubbleWrapBlock e in self.Scene.Tracker.GetEntities<BubbleWrapBlock>())
+                {
+                    if (self.CollideCheck(e, self.Position + oldCrushDir))
+                    {
+                        e.Break();
+                    }
+                }
+                foreach (ColorSwitch e in self.Scene.Tracker.GetEntities<ColorSwitch>())
+                {
+                    if (self.CollideCheck(e, self.Position + oldCrushDir))
+                    {
+                        e.Switch(oldCrushDir);
+                    }
+                }
+            }
+            data.Set("oldCrushDir", crushDir);
+        }
+
+        private void FallingBlock_LandParticles(On.Celeste.FallingBlock.orig_LandParticles orig, FallingBlock self)
+        {
+            orig(self);
+            foreach(BubbleWrapBlock e in self.Scene.Tracker.GetEntities<BubbleWrapBlock>())
+            {
+                if (self.CollideCheck(e, self.Position + Vector2.UnitY))
+                {
+                    e.Break();
+                }
+            }
+            foreach (ColorSwitch e in self.Scene.Tracker.GetEntities<ColorSwitch>())
+            {
+                if (self.CollideCheck(e, self.Position + Vector2.UnitY))
+                {
+                    e.Switch(Vector2.UnitY);
+                }
+            }
         }
 
         private void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self)
