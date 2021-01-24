@@ -173,15 +173,16 @@ namespace Celeste.Mod.VortexHelper.Entities
         }
 
 		private bool CheckEntitySafe()
-        {
-            Player player = Scene.Tracker.GetEntity<Player>();
-            if (player == null) return true;
-
-            if (!CollideCheck(player))
-                return true; // Only checks for player right now, since this is copied from switch blocks;
-			// should also check for theo crystal, jelly, moveblocks, seekers, kevin, falling blocks, auto falling blocks, pufferbowls
-			return false;
-        }
+		{
+			foreach(Solid e in Scene.Tracker.GetEntities<Solid>())
+            {
+				if((e is CrushBlock || e is MoveBlock) && CollideCheck(e))
+                {
+					return false;
+                }
+            } 
+			return !CollideCheck<Actor>() && !CollideCheck<FallingBlock>() && !CollideCheck<AutoFallingBlock>();
+		}
 
 		public static void InitializeParticles()
         {

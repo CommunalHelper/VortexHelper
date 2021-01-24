@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace Celeste.Mod.VortexHelper.Entities
 {
     [CustomEntity("VortexHelper/AutoFallingBlock")]
+	[Tracked]
     class AutoFallingBlock : Solid
     {
 		private TileGrid tiles;
