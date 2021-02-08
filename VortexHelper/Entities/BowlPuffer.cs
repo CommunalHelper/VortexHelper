@@ -11,7 +11,6 @@ namespace Celeste.Mod.VortexHelper.Entities
     {
 		private enum States
 		{
-			Idle,
 			Hit,
 			Gone,
 			Crystal
@@ -104,6 +103,10 @@ namespace Celeste.Mod.VortexHelper.Entities
 
 		private float hardVerticalHitSoundCooldown;
 		private float swatTimer;
+
+		private const float ChainExplosionDelay = 0.1f;
+		private float chainTimer = ChainExplosionDelay;
+		private bool chainExplode = false;
 
 		// TODO: Custom sound.
 
@@ -353,7 +356,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 		}
 		public bool HitSpring(Spring spring)
 		{
-			if (state == States.Hit || state == States.Idle)
+			if (state == States.Hit)
 			{
 				switch (spring.Orientation)
 				{
@@ -525,16 +528,12 @@ namespace Celeste.Mod.VortexHelper.Entities
 					continue;
 				}
 
-				if(e is BowlPuffer)
+				if(e is BowlPuffer && e != this)
                 {
 					BowlPuffer e_ = e as BowlPuffer;
-					if (!e_.exploded && e_.state != States.Gone)
-					{
-						e_.GotoGone();
-						if (e_.state == States.Crystal) e_.ShatterBowl();
-						e_.Explode(false);
-					}
-                }
+					e_.chainExplode = (!e_.exploded && e_.state != States.Gone);
+
+				}
             }
 
 			foreach (Solid e in CollideAll<Solid>())
@@ -631,7 +630,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 			returnCurve = new SimpleCurve(Position, startPosition, control);
 			Collidable = false;
 			goneTimer = 2.5f;
-			if(state == States.Idle || state == States.Hit) Collider = new Hitbox(8f, 10f, -4f, -10f);
+			if(state == States.Hit) Collider = new Hitbox(8f, 10f, -4f, -10f);
 			state = States.Gone;
 			base.Collider = null;
 		}
@@ -652,23 +651,6 @@ namespace Celeste.Mod.VortexHelper.Entities
 			Speed = Vector2.Zero;
 			if(!CollideCheck<Solid>(Position + Vector2.UnitY)) noGravityTimer = 0.25f;
 			state = States.Crystal;
-		}
-
-
-		private void GotoIdle(bool shatter)
-        {
-			state = States.Idle;
-			Speed = Vector2.Zero;
-			if (shatter)
-			{
-				puffer.Play("idle", true); 
-				ShatterBowl();
-			}
-			cantExplodeTimer = 0.5f;
-			Collider = new Hitbox(12f, 10f, -5f, -15f);
-			lastSinePosition = (lastSpeedPosition = (anchorPosition = Position));
-			hitSpeed = Vector2.Zero;
-			idleSine.Reset();
 		}
 
 		private bool CollidePufferBarrierCheck()
@@ -797,6 +779,22 @@ namespace Celeste.Mod.VortexHelper.Entities
 							return;
                         }
 					}
+
+					if(chainExplode)
+                    {
+						if (chainTimer > 0f) chainTimer -= Engine.DeltaTime;
+						if(chainTimer <= 0f)
+                        {
+							chainTimer = ChainExplosionDelay;
+							chainExplode = false;
+							GotoGone();
+							ShatterBowl();
+							Explode();
+							PlayerThrowSelf(entity);
+							return;
+						}
+                    }
+
 
 					if (Hold.IsHeld)
 					{
@@ -931,7 +929,6 @@ namespace Celeste.Mod.VortexHelper.Entities
 					{
 						ZeroRemainderX();
 						ZeroRemainderY();
-						GotoIdle(shatter: false);
 					}
 					break;
 
@@ -956,34 +953,6 @@ namespace Celeste.Mod.VortexHelper.Entities
 						GotoCrystal();
 					}
 					break;
-
-				case States.Idle:
-						if (Position != lastSinePosition)
-						{
-							anchorPosition += Position - lastSinePosition;
-						}
-						Vector2 vector = anchorPosition + new Vector2(idleSine.Value * 3f, idleSine.ValueOverTwo * 2f);
-						MoveToX(vector.X);
-						MoveToY(vector.Y);
-						lastSinePosition = Position;
-						if (ProximityExplodeCheck())
-						{
-							Explode();
-							GotoGone();
-							break;
-						}
-						if (AlertedCheck())
-						{
-							Alert(restart: false, playSfx: true);
-						}
-						else if (puffer.CurrentAnimationID == "alerted" && alertTimer <= 0f)
-						{
-							Audio.Play("event:/new_content/game/10_farewell/puffer_shrink", Position);
-							puffer.Play("unalert");
-						}
-						CollideWithSprings();
-						break;
-
 			}
 		}
 
@@ -1005,17 +974,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 			return result;
 		}
 
-		private bool AlertedCheck()
-		{
-			Player entity = base.Scene.Tracker.GetEntity<Player>();
-			if (entity != null)
-			{
-				return (entity.Center - base.Center).Length() < 60f;
-			}
-			return false;
-		}
-
-		private void Alert(bool restart, bool playSfx)
+        private void Alert(bool restart, bool playSfx)
 		{
 			if (puffer.CurrentAnimationID == "idle")
 			{
@@ -1036,63 +995,10 @@ namespace Celeste.Mod.VortexHelper.Entities
 		public override void Render()
 		{
 			puffer.Scale = scale * (1f + inflateWiggler.Value * 0.4f);
-			if (state == States.Idle || state == States.Hit)
-			{
-				puffer.FlipX = facing != Facings.Right;
-				puffer.DrawSimpleOutline();
-			} else
-            {
 				puffer.FlipX = false;
-			}
 
 			Vector2 position = Position;
 			Position.Y -= 6;
-			float num = playerAliveFade * Calc.ClampedMap((Position - lastPlayerPos).Length(), 128f, 96f);
-			if (num > 0f && state == States.Idle || state == States.Hit)
-			{
-				bool flag2 = false;
-				Vector2 value = lastPlayerPos;
-				if (value.Y < base.Y)
-				{
-					value.Y = base.Y - (value.Y - base.Y) * 0.5f;
-					value.X += value.X - base.X;
-					flag2 = true;
-				}
-				float radiansB = (value - Position).Angle();
-				for (int i = 0; i < 28; i++)
-				{
-					float num2 = (float)Math.Sin(base.Scene.TimeActive * 0.5f) * 0.02f;
-					float num3 = Calc.Map((float)i / 28f + num2, 0f, 1f, -(float)Math.PI / 30f, 3.24631262f);
-					num3 += bounceWiggler.Value * 20f * ((float)Math.PI / 180f);
-					Vector2 value2 = Calc.AngleToVector(num3, 1f);
-					Vector2 vector = Position + value2 * 32f;
-					float t = Calc.ClampedMap(Calc.AbsAngleDiff(num3, radiansB), (float)Math.PI / 2f, 0.17453292f);
-					t = Ease.CubeOut(t) * 0.8f * num;
-					if (!(t > 0f))
-					{
-						continue;
-					}
-					if (i == 0 || i == 27)
-					{
-						Draw.Line(vector, vector - value2 * 10f, Color.White * t);
-						continue;
-					}
-					Vector2 vector2 = value2 * (float)Math.Sin(base.Scene.TimeActive * 2f + (float)i * 0.6f);
-					if (i % 2 == 0)
-					{
-						vector2 *= -1f;
-					}
-					vector += vector2;
-					if (!flag2 && Calc.AbsAngleDiff(num3, radiansB) <= 0.17453292f)
-					{
-						Draw.Line(vector, vector - value2 * 3f, Color.White * t);
-					}
-					else
-					{
-						Draw.Point(vector, Color.White * t);
-					}
-				}
-			}
 			Position = position;
 
 			base.Render();
