@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+
+<Sprites>
+
+  <lavenderBooster path="objects/VortexHelper/lavenderBooster/" start="loop">
+    <Justify x="0.5" y="0.5"/>
+    <Anim id="appear" path="boosterLavender" delay="0.04" frames="26-34" goto="loop"/>
+    <Loop id="loop" path="boosterLavender" delay="0.1" frames="0-4"/>
+    <Loop id="inside" path="boosterLavender" delay="0.1" frames="5-8"/>
+    <Loop id="spin" path="boosterLavender" delay="0.06" frames="18-25"/>
+    <Anim id="pop" path="boosterLavender" delay="0.08" frames="9-17"/>
+  </lavenderBooster>
+  
+</Sprites>

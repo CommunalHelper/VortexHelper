@@ -26,9 +26,11 @@ namespace Celeste.Mod.VortexHelper.Entities
         public bool BoostingPlayer
         {
             get;
-            private set;
+            set;
         }
         public bool StartedBoosting;
+
+        private bool lavender;
 
         private bool linkVisible = false;
         private float actualLinkPercent = 1.0f;
@@ -38,18 +40,26 @@ namespace Celeste.Mod.VortexHelper.Entities
         private static readonly ParticleType P_Appear = new ParticleType(Booster.P_Appear);
         private static readonly ParticleType P_BurstExplode = new ParticleType(Booster.P_Burst);
 
+        private static readonly ParticleType P_BurstLavender = new ParticleType(Booster.P_Burst);
+        private static readonly ParticleType P_BurstExplodeLavender = new ParticleType(Booster.P_Burst);
+
         private SoundSource loopingSfx;
         public PurpleBooster(EntityData data, Vector2 offset)
-            : this(data.Position + offset)
+            : this(data.Position + offset, data.Bool("lavender", false))
         { }
 
-        public PurpleBooster(Vector2 position)
+        public PurpleBooster(Vector2 position, bool lavender)
             : base(position)
         {
+            this.lavender = lavender;
+
             base.Depth = -8500;
             base.Collider = new Circle(10f, 0f, 2f);
 
-            Add(sprite = VortexHelperModule.PurpleBoosterSpriteBank.Create("purpleBooster"));
+            sprite = lavender ? 
+                VortexHelperModule.LavenderBoosterSpriteBank.Create("lavenderBooster") : VortexHelperModule.PurpleBoosterSpriteBank.Create("purpleBooster");
+
+            Add(sprite);
 
             Add(new PlayerCollider(OnPlayer));
             Add(new VertexLight(Color.White, 1f, 16, 32));
@@ -116,7 +126,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 
         public static void Boost(Player player, PurpleBooster booster)
         {
-            player.StateMachine.State = (VortexHelperModule.PurpleBoosterState);
+            player.StateMachine.State = booster.lavender ? VortexHelperModule.LavenderBoosterState : VortexHelperModule.PurpleBoosterState;
             player.Speed = Vector2.Zero;
             var playerData = new DynData<Player>(player); 
             playerData.Set("boostTarget", booster.Center);
@@ -126,10 +136,11 @@ namespace Celeste.Mod.VortexHelper.Entities
         public void PlayerBoosted(Player player, Vector2 direction)
         {
             StartedBoosting = false;
+            BoostingPlayer = false;
             linkVisible = true;
             Audio.Play("event:/game/04_cliffside/greenbooster_dash", this.Position);
 
-            loopingSfx.Play("event:/game/05_mirror_temple/redbooster_move"); // temporary
+            if(!lavender) loopingSfx.Play("event:/game/05_mirror_temple/redbooster_move"); // temporary
             loopingSfx.DisposeOnTransition = false;
 
             this.BoostingPlayer = true;
@@ -142,7 +153,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         private IEnumerator BoostRoutine(Player player, Vector2 dir)
         {
             Level level = SceneAs<Level>();
-            while (player.StateMachine.State == VortexHelperModule.PurpleBoosterDashState && this.BoostingPlayer)
+            while (player.StateMachine.State == (lavender ? 2 : VortexHelperModule.PurpleBoosterDashState) && this.BoostingPlayer)
             {
                 if (player.Dead)
                 {
@@ -154,7 +165,7 @@ namespace Celeste.Mod.VortexHelper.Entities
                     this.loopingSfx.Position = this.sprite.Position;
                     if (this.Scene.OnInterval(0.02f))
                     {
-                        level.ParticlesBG.Emit(P_Burst, 2, player.Center - dir * 3f + new Vector2(0f, -2f), new Vector2(3f, 3f));
+                        level.ParticlesBG.Emit(lavender ? P_BurstLavender : P_Burst, 2, player.Center - dir * 3f + new Vector2(0f, -2f), new Vector2(3f, 3f));
                     }
                     yield return null;
                 }
@@ -170,10 +181,10 @@ namespace Celeste.Mod.VortexHelper.Entities
 
             if (!linkVisible)
             {
-                float angle = (-dir).Angle() - 0.5f;
+                float angle = (lavender ? player.DashDir : (-dir)).Angle() - 0.5f;
                 for (int i = 0; i < 20; i++)
                 {
-                    level.ParticlesBG.Emit(P_BurstExplode, 1, base.Center, new Vector2(3f, 3f), angle + Calc.Random.NextFloat());
+                    level.ParticlesBG.Emit(lavender ? P_BurstExplodeLavender : P_BurstExplode, 1, player.Center, new Vector2(3f, 3f), angle + Calc.Random.NextFloat());
                 }
             }
             while (this.SceneAs<Level>().Transitioning)
@@ -186,7 +197,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 
         private void OnPlayerDashed(Vector2 direction)
         {
-            if (BoostingPlayer)
+            if (BoostingPlayer && !lavender)
             {
                 BoostingPlayer = false;
             }
@@ -267,7 +278,7 @@ namespace Celeste.Mod.VortexHelper.Entities
                 sprite.DrawOutline();
             }
 
-            if (linkVisible)
+            if (linkVisible && !lavender)
             {
                 RenderPurpleBoosterLink(12, 0.35f);
             }
@@ -309,6 +320,10 @@ namespace Celeste.Mod.VortexHelper.Entities
             P_BurstExplode.Color = P_Burst.Color;
             P_BurstExplode.SpeedMax = 250; // felt like good value
 
+            P_BurstLavender.Color = Calc.HexToColor("6a38b0");
+
+            P_BurstExplodeLavender.Color = P_BurstLavender.Color;
+            P_BurstExplodeLavender.SpeedMax = 250;
         }
 
 
@@ -414,7 +429,6 @@ namespace Celeste.Mod.VortexHelper.Entities
 
                 playerData.Set("purpleBoosterEarlyExit", true);
                 player.LiftSpeed += playerData.Get<Vector2>("purpleBoostPossibleEarlyDashSpeed");
-                Console.WriteLine(player.LiftSpeed);
 
                 Input.Dash.ConsumePress();
                 return 2;
@@ -450,14 +464,14 @@ namespace Celeste.Mod.VortexHelper.Entities
             PurpleBoosterExplodeLaunch(player, playerData, player.Center - player.DashDir, origin);
         }
 
-        public static void PurpleBoosterExplodeLaunch(Player player, DynData<Player> playerData, Vector2 from, Vector2 origin)
+        public static void PurpleBoosterExplodeLaunch(Player player, DynData<Player> playerData, Vector2 from, Vector2? origin, float factor = 1f)
         {
             Input.Rumble(RumbleStrength.Strong, RumbleLength.Medium);
             Celeste.Freeze(0.1f);
             playerData.Set<float?>("launchApproachX", null);
             Level level = player.SceneAs<Level>(); 
 
-            level.Displacement.AddBurst(origin, 0.25f, 8f, 64f, 0.5f, Ease.QuadIn, Ease.QuadOut);
+            if(origin != null) level.Displacement.AddBurst((Vector2)origin, 0.25f, 8f, 64f, 0.5f, Ease.QuadIn, Ease.QuadOut);
             level.Shake(0.15f);
 
             Vector2 vector = (player.Center - from).SafeNormalize(-Vector2.UnitY);
@@ -481,6 +495,69 @@ namespace Celeste.Mod.VortexHelper.Entities
             }
             player.RefillStamina();
             player.StateMachine.State = 7;
+            player.Speed *= factor;
+        }
+
+        public static void LavenderBoostBegin()
+        {
+            Player player = VortexHelperModule.GetPlayer();
+            if ((player.SceneAs<Level>()?.Session.MapData.GetMeta()?.TheoInBubble).GetValueOrDefault())
+            {
+                player.RefillDash();
+                player.RefillStamina();
+            }
+            else
+            {
+                player.RefillDash();
+                player.RefillStamina();
+                if (player.Holding != null)
+                {
+                    player.Drop();
+                }
+            }
+        }
+
+        public static int LavenderBoostUpdate()
+        {
+            Player player = VortexHelperModule.GetPlayer();
+            Vector2 boostTarget = new DynData<Player>(player).Get<Vector2>("boostTarget");
+
+            Vector2 value = Input.Aim.Value * 3f;
+            Vector2 vector = Calc.Approach(player.ExactPosition, boostTarget - player.Collider.Center + value, 80f * Engine.DeltaTime);
+            player.MoveToX(vector.X);
+            player.MoveToY(vector.Y);
+            if (Input.Dash.Pressed)
+            {
+                Input.Dash.ConsumePress();
+                return 2;
+            }
+            return VortexHelperModule.LavenderBoosterState;
+        }
+
+        public static IEnumerator LavenderBoostCoroutine()
+        {
+            yield return 0.25f;
+            VortexHelperModule.GetPlayer().StateMachine.State = 2;
+        }
+
+        public static void LavenderBoostEnd()
+        {
+            Player player = VortexHelperModule.GetPlayer();
+            Vector2 vector = (new DynData<Player>(player).Get<Vector2>("boostTarget") - player.Collider.Center).Floor();
+            player.MoveToX(vector.X);
+            player.MoveToY(vector.Y);
+            foreach (PurpleBooster b in player.Scene.Tracker.GetEntities<PurpleBooster>())
+            {
+                if (b.StartedBoosting)
+                {
+                    b.PlayerBoosted(player, player.DashDir);
+                    return;
+                }
+                if (b.BoostingPlayer)
+                {
+                    return;
+                }
+            }
         }
 
         #endregion

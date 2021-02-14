@@ -1,15 +1,24 @@
 module VortexHelperPurpleBooster
 using ..Ahorn, Maple
 
-@mapdef Entity "VortexHelper/PurpleBooster" PurpleBooster(x::Integer, y::Integer)
+@mapdef Entity "VortexHelper/PurpleBooster" PurpleBooster(x::Integer, y::Integer, lavender::Bool = false)
 
 const placements = Ahorn.PlacementDict(
     "Booster (Purple) (Vortex Helper)" => Ahorn.EntityPlacement(
-        PurpleBooster
+        PurpleBooster,
+        "point"
+    ),
+    "Booster (Lavender) (Vortex Helper)" => Ahorn.EntityPlacement(
+        PurpleBooster,
+        "point",
+        Dict{String, Any}(
+            "lavender" => true
+        )
     )
 )
 
 boosterSprite = "objects/VortexHelper/slingBooster/slingBooster00"
+lavenderBoosterSprite = "objects/VortexHelper/lavenderBooster/boosterLavender00"
 
 function Ahorn.selection(entity::PurpleBooster)
     x, y = Ahorn.position(entity)
@@ -18,7 +27,7 @@ function Ahorn.selection(entity::PurpleBooster)
 end
 
 function Ahorn.render(ctx::Ahorn.Cairo.CairoContext, entity::PurpleBooster, room::Maple.Room)
-    Ahorn.drawSprite(ctx, boosterSprite, 0, 0)
+    Ahorn.drawSprite(ctx, Bool(get(entity.data, "lavender", false)) ? lavenderBoosterSprite : boosterSprite, 0, 0)
 end
 
 end

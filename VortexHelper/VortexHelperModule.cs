@@ -16,10 +16,12 @@ namespace Celeste.Mod.VortexHelper
 
         public static SpriteBank FloorBoosterSpriteBank;
         public static SpriteBank PurpleBoosterSpriteBank;
+        public static SpriteBank LavenderBoosterSpriteBank;
         public static SpriteBank VortexBumperSpriteBank;
         public static SpriteBank PufferBowlSpriteBank;
 
         public static int PurpleBoosterState;
+        public static int LavenderBoosterState;
         public static int PurpleBoosterDashState;
 
         public static MethodInfo Spring_BounceAnimate = typeof(Spring).GetMethod("BounceAnimate", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -46,6 +48,7 @@ namespace Celeste.Mod.VortexHelper
             BowlPuffer.InitializeParticles();
 
             PurpleBoosterSpriteBank = new SpriteBank(GFX.Game, "Graphics/PurpleBoosterSprites.xml");
+            LavenderBoosterSpriteBank = new SpriteBank(GFX.Game, "Graphics/LavenderBoosterSprites.xml");
             PurpleBooster.InitializeParticles();
 
             VortexBumperSpriteBank = new SpriteBank(GFX.Game, "Graphics/VortexCustomBumperSprites.xml");
@@ -60,6 +63,7 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.Player.NormalBegin += Player_NormalBegin;
             On.Celeste.Player.RefillDash += Player_RefillDash;
             On.Celeste.Player.DashBegin += Player_DashBegin;
+            On.Celeste.Player.DashEnd += Player_DashEnd;
 
             On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
 
@@ -82,6 +86,7 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.Player.NormalBegin -= Player_NormalBegin;
             On.Celeste.Player.RefillDash -= Player_RefillDash;
             On.Celeste.Player.DashBegin -= Player_DashBegin;
+            On.Celeste.Player.DashEnd -= Player_DashEnd;
 
             On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
 
@@ -95,6 +100,27 @@ namespace Celeste.Mod.VortexHelper
 
             On.Celeste.CrushBlock.Update -= CrushBlock_Update;
             On.Celeste.CrushBlock.ctor_EntityData_Vector2 -= CrushBlock_ctor_EntityData_Vector2;
+        }
+
+        private void Player_DashEnd(On.Celeste.Player.orig_DashEnd orig, Player self)
+        {
+            orig(self);
+            foreach (PurpleBooster b in self.Scene.Tracker.GetEntities<PurpleBooster>())
+            {
+                if (b.BoostingPlayer)
+                {
+                    b.BoostingPlayer = false;
+                    foreach(PurpleBooster other_booster in self.Scene.Tracker.GetEntities<PurpleBooster>())
+                    {
+                        if (other_booster != b)
+                        {
+                            if(self.CollideCheck(other_booster)) return;
+                        }
+                    }
+                    PurpleBooster.PurpleBoosterExplodeLaunch(self, new DynData<Player>(self), self.Center - self.DashDir, null, -1f);
+                    return;
+                }
+            }
         }
 
         private void CrushBlock_ctor_EntityData_Vector2(On.Celeste.CrushBlock.orig_ctor_EntityData_Vector2 orig, CrushBlock self, EntityData data, Vector2 offset)
@@ -219,6 +245,11 @@ namespace Celeste.Mod.VortexHelper
                 PurpleBooster.PurpleBoostCoroutine, 
                 PurpleBooster.PurpleBoostBegin, 
                 PurpleBooster.PurpleBoostEnd);
+            LavenderBoosterState = self.StateMachine.AddState(
+                new Func<int>(PurpleBooster.LavenderBoostUpdate),
+                PurpleBooster.LavenderBoostCoroutine,
+                PurpleBooster.LavenderBoostBegin,
+                PurpleBooster.LavenderBoostEnd);
             PurpleBoosterDashState = self.StateMachine.AddState(
                 new Func<int>(PurpleBooster.PurpleDashingUpdate),
                 PurpleBooster.PurpleDashingCoroutine,
