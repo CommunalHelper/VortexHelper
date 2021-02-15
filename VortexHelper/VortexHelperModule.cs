@@ -19,6 +19,7 @@ namespace Celeste.Mod.VortexHelper
         public static SpriteBank LavenderBoosterSpriteBank;
         public static SpriteBank VortexBumperSpriteBank;
         public static SpriteBank PufferBowlSpriteBank;
+        public static SpriteBank LillySpriteBank;
 
         public static int PurpleBoosterState;
         public static int LavenderBoosterState;
@@ -55,6 +56,8 @@ namespace Celeste.Mod.VortexHelper
             VortexBumper.InitializeParticles();
 
             BubbleWrapBlock.InitializeParticles();
+
+            LillySpriteBank = new SpriteBank(GFX.Game, "Graphics/LillySprites.xml");
         }
         public override void Load()
         {

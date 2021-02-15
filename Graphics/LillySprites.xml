@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<Sprites>
+
+	<lillyBlock path="objects/VortexHelper/squareBumperNew/" start="inactive">
+            <Center/>
+            <Loop id="inactive" path="block" frames="0-1" delay="0.08"/>
+            <Loop id="active" path="active_block" frames="0-1" delay="0.08"/>
+	</lillyBlock>
+      
+      <lillyFace path="objects/VortexHelper/squareBumperNew/" start="idle">
+            <Center/>
+
+            <Loop id="idle" path="face" frames="0"/>
+            <Anim id="idle_climb" path="face" frames="1-3" delay="0.08"/>
+            <Anim id="climb_idle" path="face" frames="2,1,0" delay="0.08" goto="idle"/>
+
+            <Anim id="dashed" path="face" frames="4" delay="0.2" goto="dash"/>
+            <Loop id="dash" path="face" frames="5,6" delay="0.08"/>
+
+            <Anim id="retract" path="face" frames="7-9" delay="0.08"/>
+            <Anim id="end_retract" path="face" frames="10-12" delay="0.08" goto="idle_alt"/>
+
+            <Loop id="idle_alt" path="face" frames="12" delay="0.08"/>
+            <Loop id="climb_alt" path="face" frames="13" delay="0.08"/>
+
+            <Anim id="horrified" path="face" frames="14,15,16,15,16,15,16,15,16,15,16,15,16,17,18,0" delay="0.06"/>
+	</lillyFace>
+
+</Sprites>
