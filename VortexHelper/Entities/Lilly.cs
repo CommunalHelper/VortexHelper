@@ -281,10 +281,6 @@ namespace Celeste.Mod.VortexHelper.Entities
             // Back together.
             bloom.Visible = false;
             sfx.Param("end", 1f);
-            Alarm.Set(this, 1f, delegate
-            {
-                sfx.Stop();
-            });
             faceState = FaceState.IdleAlt;
             face.Play("end_retract");
             block.Play("inactive", true);
