@@ -16,11 +16,12 @@ namespace Celeste.Mod.VortexHelper.Entities
             public Vector2 startPosition;
             public float Distance => Position.X - startPosition.X;
 
-            public LillyArmEnd(Vector2 position) 
+            public LillyArmEnd(Vector2 position, List<StaticMover> newStaticMovers) 
                 : base(position + Vector2.UnitY, 6, 17, true)
             {
                 startPosition = position;
                 SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
+                staticMovers = newStaticMovers;
             }
         }
 
@@ -93,6 +94,11 @@ namespace Celeste.Mod.VortexHelper.Entities
         private bool Activated => faceState == FaceState.Dash || faceState == FaceState.Retract;
         private bool WasUsedOnce => faceState == FaceState.IdleAlt || faceState == FaceState.ClimbedOnAlt;
 
+        private BloomPoint bloom;
+
+        private List<StaticMover> leftStaticMovers = new List<StaticMover>();
+        private List<StaticMover> rightStaticMovers = new List<StaticMover>();
+
         public Lilly(EntityData data, Vector2 offset)
             : this(data.Position + offset, data.Int("maxLength")) { }
 
@@ -123,6 +129,12 @@ namespace Celeste.Mod.VortexHelper.Entities
             Add(face);
 
             OnDashCollide = OnDashed;
+
+            Add(bloom = new BloomPoint(.65f, 16f)
+            {
+                Position = middle,
+                Visible = false
+            });
         }
 
         private DashCollisionResults OnDashed(Player player, Vector2 dir)
@@ -142,14 +154,14 @@ namespace Celeste.Mod.VortexHelper.Entities
             faceState = FaceState.Dash;
             face.Play("dashed", true);
             ChangeColor(DashColor);
-            StartShaking(.3f);
+            StartShaking(.375f);
             Audio.Play(CustomSFX.game_lilly_dashed, Center);
             yield return .5f;
 
             // Arms extend.
             leftArmOffset = 0f;
             rightArmOffset = 0f;
-
+            bloom.Visible = true;
             block.Play("active", true);
             Input.Rumble(RumbleStrength.Medium, RumbleLength.Short);
             level.DirectionalShake(Vector2.UnitX, 0.1f);
@@ -157,8 +169,8 @@ namespace Celeste.Mod.VortexHelper.Entities
 
             sfx.Play(CustomSFX.game_lilly_conveyor, "end", 0f);
 
-            LillyArmEnd rightArmEnd = new LillyArmEnd(Position + new Vector2(Width - 6, 0));
-            LillyArmEnd leftArmEnd = new LillyArmEnd(Position);
+            LillyArmEnd rightArmEnd = new LillyArmEnd(Position + new Vector2(Width - 6, 0), rightStaticMovers);
+            LillyArmEnd leftArmEnd = new LillyArmEnd(Position, leftStaticMovers);
             LillyArm rightArm = new LillyArm(new Vector2(X + Width, Y), rightArmEnd, (int)(X + Width), 6);
             LillyArm leftArm = new LillyArm(new Vector2(X + 6, Y), leftArmEnd, (int)X, 0);
             AddArm(rightArmEnd, rightArm); AddArm(leftArmEnd, leftArm);
@@ -267,8 +279,9 @@ namespace Celeste.Mod.VortexHelper.Entities
             }
 
             // Back together.
+            bloom.Visible = false;
             sfx.Param("end", 1f);
-            Alarm.Set(this, 0.5f, delegate
+            Alarm.Set(this, 1f, delegate
             {
                 sfx.Stop();
             });
@@ -353,6 +366,27 @@ namespace Celeste.Mod.VortexHelper.Entities
             base.Awake(scene);
             level = SceneAs<Level>();
             Add();
+
+            foreach(StaticMover sm in staticMovers)
+            {
+                if (sm.Entity.Top < Top) continue;
+
+                if (sm.Entity.Left < Left)
+                {
+                    leftStaticMovers.Add(sm);
+                    continue;
+                }
+                if (sm.Entity.Right > Right)
+                {
+                    rightStaticMovers.Add(sm);
+                    continue;
+                }
+            }
+
+            foreach(StaticMover sm in leftStaticMovers)
+                staticMovers.Remove(sm);
+            foreach (StaticMover sm in rightStaticMovers)
+                staticMovers.Remove(sm);
         }
 
         public override void Update()

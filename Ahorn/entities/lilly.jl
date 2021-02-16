@@ -8,7 +8,7 @@ using Cairo
                                     nodes::Array{Tuple{Integer, Integer}, 1}=Tuple{Integer, Integer}[])
 
 function lillyFinalizer(entity::Lilly)
-    entity.data["maxLength"] = abs(entity.data["nodes"][1][1] - entity.data["x"]) 
+    entity.data["maxLength"] = max(8, abs(entity.data["nodes"][1][1] - entity.data["x"]))
 end
 
 const placements = Ahorn.PlacementDict(
