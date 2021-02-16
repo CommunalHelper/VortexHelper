@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VortexHelper;
 
 namespace Celeste.Mod.VortexHelper.Triggers
 {
@@ -32,7 +33,7 @@ namespace Celeste.Mod.VortexHelper.Triggers
         public override void OnEnter(Player player)
         {
             base.OnEnter(player);
-            Audio.Play("event:/vortexHelperEvents/game/killLightningTrigger/break", Center);
+            Audio.Play(CustomSFX.game_killLightningTrigger_break, Center);
 			Break();
             Input.Rumble(RumbleStrength.Strong, RumbleLength.Long);
         }

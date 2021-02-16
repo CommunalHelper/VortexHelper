@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
+using VortexHelper;
 
 namespace Celeste.Mod.VortexHelper.Entities
 {
@@ -211,10 +212,10 @@ namespace Celeste.Mod.VortexHelper.Entities
             SetEdgeColor(defaultEdgeColor, col);
             actualBackgroundColor = Color.White;
 
-            Audio.Play("event:/vortexHelperEvents/game/colorSwitch/hit", base.Center);
+            Audio.Play(CustomSFX.game_colorSwitch_hit, base.Center);
             if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.switchBlockColor))
             {
-                Audio.Play("event:/vortexHelperEvents/game/switchBlock/switch",
+                Audio.Play(CustomSFX.game_switchBlock_switch,
                     "tone", GetSoundParam(VortexHelperModule.SessionProperties.switchBlockColor));
             }
 

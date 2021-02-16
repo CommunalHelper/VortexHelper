@@ -1,4 +1,7 @@
 {62da4aff-d853-4859-99b9-4bdadca63733} event:/vortexHelperEvents/game/colorSwitch/hit
-{c68117b9-84b5-4055-b05d-f9acb84d5a2c} event:/vortexHelperEvents/game/switchBlock/switch
 {0fd9651a-4cf1-4c0d-8f09-66c8ce319a5c} event:/vortexHelperEvents/game/killLightningTrigger/break
+{c68117b9-84b5-4055-b05d-f9acb84d5a2c} event:/vortexHelperEvents/game/switchBlock/switch
+{6a582f2f-d8b6-43ca-a068-4f9259bc3311} event:/vortexHelperEvents/game/lilly/dashed
+{439237fc-531b-4cdb-b80e-55218f4eea18} event:/vortexHelperEvents/game/lilly/arm_conveyor
+{88156450-b139-45fa-a4d4-f1eadc56e38c} event:/vortexHelperEvents/game/lilly/arm_impact
 {29b11458-c153-4eb0-a380-c24ca1aa17b5} bank:/VortexHelperBank

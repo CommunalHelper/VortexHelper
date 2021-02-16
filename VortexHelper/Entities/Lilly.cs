@@ -3,12 +3,56 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using VortexHelper;
 
 namespace Celeste.Mod.VortexHelper.Entities
 {
     [CustomEntity("VortexHelper/Lilly")]
     class Lilly : Solid
     {
+        private class LillyArmEnd : Solid
+        {
+            public Vector2 startPosition;
+            public float Distance => Position.X - startPosition.X;
+
+            public LillyArmEnd(Vector2 position) 
+                : base(position + Vector2.UnitY, 6, 17, true)
+            {
+                startPosition = position;
+                SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
+            }
+        }
+
+        private class LillyArm : JumpThru
+        {
+            private LillyArmEnd end;
+            private int origin;
+            private int endOffset;
+
+            private int From => Math.Min(origin, (int)end.X);
+            private int To => Math.Max(origin, (int)end.X + endOffset);
+
+            public LillyArm(Vector2 position, LillyArmEnd to, int fromX, int endOffset)
+                : base(position, 32, true)
+            {
+                end = to;
+                origin = fromX;
+                this.endOffset = endOffset;
+                SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
+            }
+
+            public void UpdateArm(float move)
+            {
+                MoveH(move);
+                X = From; 
+                Collider = Math.Abs(end.Distance) > 0 ? new Hitbox(To - From, 5) : null;
+            }
+        }
+
+        public const float ArmSpeed = 240;
+        public const float ArmSpeedRetract = 112;
+
         public static readonly Color IdleColor = Calc.HexToColor("0061ff");
         public static readonly Color ClimbedOnColor = Calc.HexToColor("ff38f1");
         public static readonly Color DashColor = Calc.HexToColor("ff0033");
@@ -37,23 +81,44 @@ namespace Celeste.Mod.VortexHelper.Entities
 
         private Level level;
 
+        private MTexture armEnd;
+        private List<MTexture> arm;
+        private bool armsExtended = false;
+        private float leftArmOffset, rightArmOffset;
+
+        private int maxLength;
+
+        private SoundSource sfx;
+
         private bool Activated => faceState == FaceState.Dash || faceState == FaceState.Retract;
         private bool WasUsedOnce => faceState == FaceState.IdleAlt || faceState == FaceState.ClimbedOnAlt;
 
         public Lilly(EntityData data, Vector2 offset)
-            : this(data.Position + offset, data.Width, data.Height) { }
+            : this(data.Position + offset, data.Int("maxLength")) { }
 
-        public Lilly(Vector2 position, int width, int height)
-            : base(position, width, height, true)
+        public Lilly(Vector2 position, int maxLength)
+            : base(position, 24, 24, true)
         {
             SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
 
+            armEnd = GFX.Game["objects/VortexHelper/squareBumperNew/armEnd"];
+            arm = GFX.Game.GetAtlasSubtextures("objects/VortexHelper/squareBumperNew/arm");
+
+            this.maxLength = Math.Abs(maxLength);
+
+            Vector2 middle = new Vector2(12, 12);
+
             block = VortexHelperModule.LillySpriteBank.Create("lillyBlock");
-            block.Position = new Vector2(width / 2, height / 2);
+            block.Position = middle;
             Add(block);
 
+            Add(sfx = new SoundSource()
+            {
+                Position = middle
+            });
+
             face = VortexHelperModule.LillySpriteBank.Create("lillyFace");
-            face.Position = new Vector2(width / 2, height / 2 + 1);
+            face.Position = new Vector2(12, 13);
             face.Color = IdleColor;
             Add(face);
 
@@ -78,30 +143,156 @@ namespace Celeste.Mod.VortexHelper.Entities
             face.Play("dashed", true);
             ChangeColor(DashColor);
             StartShaking(.3f);
+            Audio.Play(CustomSFX.game_lilly_dashed, Center);
             yield return .5f;
 
             // Arms extend.
-            block.Play("active", true);
-            level.DirectionalShake(Vector2.UnitX, 0.1f);
-            yield return 1f;
+            leftArmOffset = 0f;
+            rightArmOffset = 0f;
 
-            // Arms collide, waiting 300ms.
-            level.DirectionalShake(Vector2.UnitX, 0.2f);
-            yield return 0.3f;
+            block.Play("active", true);
+            Input.Rumble(RumbleStrength.Medium, RumbleLength.Short);
+            level.DirectionalShake(Vector2.UnitX, 0.1f);
+            armsExtended = true;
+
+            sfx.Play(CustomSFX.game_lilly_conveyor, "end", 0f);
+
+            LillyArmEnd rightArmEnd = new LillyArmEnd(Position + new Vector2(Width - 6, 0));
+            LillyArmEnd leftArmEnd = new LillyArmEnd(Position);
+            LillyArm rightArm = new LillyArm(new Vector2(X + Width, Y), rightArmEnd, (int)(X + Width), 6);
+            LillyArm leftArm = new LillyArm(new Vector2(X + 6, Y), leftArmEnd, (int)X, 0);
+            AddArm(rightArmEnd, rightArm); AddArm(leftArmEnd, leftArm);
+            bool rightArmExtended = false, leftArmExtended = false;
+            while (!rightArmExtended || !leftArmExtended)
+            {
+                Collidable = false;
+                if (!rightArmExtended)
+                {
+                    float moveAmount = rightArmEnd.X;
+                    float move = (rightArmExtended = (rightArmEnd.X + ArmSpeed * Engine.DeltaTime > rightArmEnd.startPosition.X + maxLength)) ?
+                        (rightArmEnd.startPosition.X + maxLength) - rightArmEnd.X : ArmSpeed * Engine.DeltaTime;
+
+                    rightArmEnd.MoveHCollideSolids(move, true, delegate
+                    {
+                        rightArmExtended = true;
+                    });
+
+                    moveAmount = rightArmEnd.X - moveAmount;
+                    rightArm.UpdateArm(moveAmount);
+
+                    if (rightArmExtended)
+                    {
+                        level.DirectionalShake(Vector2.UnitX, 0.25f);
+                        Audio.Play(CustomSFX.game_lilly_arm_impact, rightArmEnd.Center, "retract", 0f);
+                        Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
+                    }
+                }
+                if (!leftArmExtended)
+                {
+                    float moveAmount = leftArmEnd.X;
+                    float move = (leftArmExtended = (leftArmEnd.X - ArmSpeed * Engine.DeltaTime < leftArmEnd.startPosition.X - maxLength)) ?
+                        (leftArmEnd.startPosition.X - maxLength) - leftArmEnd.X : -ArmSpeed * Engine.DeltaTime;
+
+                    leftArmEnd.MoveHCollideSolids(move, true, delegate
+                    {
+                        leftArmExtended = true;
+                    });
+
+                    moveAmount = leftArmEnd.X - moveAmount;
+                    leftArm.UpdateArm(moveAmount);
+
+                    if (leftArmExtended)
+                    {
+                        level.DirectionalShake(Vector2.UnitX, 0.25f);
+                        Audio.Play(CustomSFX.game_lilly_arm_impact, leftArmEnd.Center, "retract", 0f);
+                        Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
+                    }
+                }
+                leftArmOffset = leftArmEnd.Distance;
+                rightArmOffset = rightArmEnd.Distance;
+                Collidable = true;
+                yield return null;
+            }
+
+            // Arms collide, waiting 1s.
+            sfx.Param("end", 1f);
+            yield return 1f;
 
             // Arms are retracting.
             faceState = FaceState.Retract;
             face.Play("retract");
+            sfx.Play(CustomSFX.game_lilly_conveyor, "end", 0f);
             ChangeColor(RetractColor);
-            yield return 1f;
+            float retractFactor = 0f;
+            while(rightArmExtended || leftArmExtended)
+            {
+                retractFactor = Calc.Approach(retractFactor, 1f, Engine.DeltaTime * 3f);
+                float retractSpeed = ArmSpeedRetract * retractFactor;
+                bool scrapeParticles = level.OnInterval(.3f);
+                if (rightArmExtended)
+                {
+                    float newX = rightArmEnd.X - retractSpeed * Engine.DeltaTime;
+                    bool finished = false;
+                    if (newX < rightArmEnd.startPosition.X)
+                    {
+                        finished = true;
+                        newX = rightArmEnd.startPosition.X;
+                        StartShaking(0.1f);
+                        Audio.Play(CustomSFX.game_lilly_arm_impact, Center, "retract", 1f);
+                    }
+                    float move = newX - rightArmEnd.X;
+                    rightArmEnd.MoveH(move);
+                    rightArm.UpdateArm(move);
+                    rightArmExtended = !finished;
+                }
+                if (leftArmExtended)
+                {
+                    float newX = leftArmEnd.X + retractSpeed * Engine.DeltaTime;
+                    bool finished = false;
+                    if (newX > leftArmEnd.startPosition.X)
+                    {
+                        finished = true;
+                        newX = leftArmEnd.startPosition.X;
+                        StartShaking(0.1f);
+                        Audio.Play(CustomSFX.game_lilly_arm_impact, Center, "retract", 1f);
+                    }
+                    float move = newX - leftArmEnd.X;
+                    leftArmEnd.MoveH(move);
+                    leftArm.UpdateArm(move);
+                    leftArmExtended = !finished;
+                }
+                leftArmOffset = leftArmEnd.Distance;
+                rightArmOffset = rightArmEnd.Distance;
+                yield return null;
+            }
 
             // Back together.
+            sfx.Param("end", 1f);
+            Alarm.Set(this, 0.5f, delegate
+            {
+                sfx.Stop();
+            });
             faceState = FaceState.IdleAlt;
             face.Play("end_retract");
             block.Play("inactive", true);
             ChangeColor(IdleAltColor);
-            StartShaking(0.1f);
+
+            armsExtended = false;
+            RemoveArms(rightArmEnd, rightArm);
+            RemoveArms(leftArmEnd, leftArm);
             yield return .25f;
+        }
+
+        private void AddArm(LillyArmEnd armEnd, LillyArm arm)
+        {
+            level.Add(armEnd);
+            level.Add(arm);
+            armEnd.Added(level); arm.Added(level);
+        }
+
+        private void RemoveArms(LillyArmEnd armEnd, LillyArm arm)
+        {
+            level.Remove(armEnd); level.Remove(arm);
         }
 
         private void ChangeColor(Color to)
@@ -161,6 +352,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         {
             base.Awake(scene);
             level = SceneAs<Level>();
+            Add();
         }
 
         public override void Update()
@@ -173,7 +365,29 @@ namespace Celeste.Mod.VortexHelper.Entities
         {
             Vector2 pos = Position;
             Position += Shake;
+
+            Vector2 leftArmPos = Position + new Vector2(8 + leftArmOffset, 0);
+            Vector2 rightArmPos = Position + new Vector2(Width - 8 + rightArmOffset, 0);
+
+            if (armsExtended)
+            {
+                MTexture armTexture = arm[(int)(Scene.TimeActive * 12) % 2];
+                for(int i = (int)leftArmPos.X - 8; i <= Left + 8; i += 8)
+                {
+                    armTexture.Draw(new Vector2(i, Y));
+                }
+                for (int i = (int)rightArmPos.X - 1; i >= Right - 16; i -= 8)
+                {
+                    armTexture.Draw(new Vector2(i, Y));
+                }
+            }
+
             base.Render();
+            if (armsExtended)
+            {
+                armEnd.Draw(rightArmPos);
+                armEnd.Draw(leftArmPos, Vector2.Zero, Color.White, new Vector2(-1, 1));
+            }
             Position = pos;
         }
     }
