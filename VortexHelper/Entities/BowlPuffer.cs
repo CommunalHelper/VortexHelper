@@ -648,7 +648,7 @@ namespace Celeste.Mod.VortexHelper.Entities
 				AllSpritesPlay("recover");
 				Audio.Play("event:/new_content/game/10_farewell/puffer_reform", Position);
 			}
-			Speed = Vector2.Zero;
+			Speed = prevLiftSpeed = Vector2.Zero;
 			if(!CollideCheck<Solid>(Position + Vector2.UnitY)) noGravityTimer = 0.25f;
 			state = States.Crystal;
 		}
