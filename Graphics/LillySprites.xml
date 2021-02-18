@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <Sprites>
-
-	<lillyBlock path="objects/VortexHelper/squareBumperNew/" start="inactive">
-            <Center/>
-            <Loop id="inactive" path="block" frames="0-1" delay="0.08"/>
-            <Loop id="active" path="active_block" frames="0-1" delay="0.08"/>
-	</lillyBlock>
-
-      <lillyArm path="objects/VortexHelper/squareBumperNew/" start="arm">
-            <Loop id="arm" path="arm" frames="0-1" delay="0.08"/>
-	</lillyArm>
       
       <lillyFace path="objects/VortexHelper/squareBumperNew/" start="idle">
             <Center/>

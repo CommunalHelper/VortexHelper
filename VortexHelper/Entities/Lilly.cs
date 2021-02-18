@@ -16,8 +16,8 @@ namespace Celeste.Mod.VortexHelper.Entities
             public Vector2 startPosition;
             public float Distance => Position.X - startPosition.X;
 
-            public LillyArmEnd(Vector2 position, List<StaticMover> newStaticMovers) 
-                : base(position + Vector2.UnitY, 6, 17, true)
+            public LillyArmEnd(Vector2 position, int height, List<StaticMover> newStaticMovers) 
+                : base(position + Vector2.UnitY, 6, height, true)
             {
                 startPosition = position;
                 SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
@@ -76,16 +76,24 @@ namespace Celeste.Mod.VortexHelper.Entities
             Horrified
         }
         private FaceState faceState;
-        private Sprite block, face;
+        private Sprite face;
 
         private Vector2 scale = Vector2.One;
 
         private Level level;
 
-        private MTexture armEnd;
         private List<MTexture> arm;
         private bool armsExtended = false;
-        private float leftArmOffset, rightArmOffset;
+        private float rightLength, leftLength;
+
+        /*
+         * 4D array let's gooo [i, j, k, l]
+         * i & j ---> x and y tile position in texture
+         * k     ---> frame of the texture, between 0 and 1
+         * l     ---> state of the texture (0 = 'block', 1 = 'active_block')
+         */
+        private static readonly MTexture[,,,] blockTextures = new MTexture[3, 4, 2, 2];
+        private static readonly MTexture[] armEndTextures = new MTexture[4];
 
         private int maxLength;
 
@@ -100,23 +108,17 @@ namespace Celeste.Mod.VortexHelper.Entities
         private List<StaticMover> rightStaticMovers = new List<StaticMover>();
 
         public Lilly(EntityData data, Vector2 offset)
-            : this(data.Position + offset, data.Int("maxLength")) { }
+            : this(data.Position + offset, data.Height, data.Int("maxLength")) { }
 
-        public Lilly(Vector2 position, int maxLength)
-            : base(position, 24, 24, true)
+        public Lilly(Vector2 position, int height, int maxLength)
+            : base(position, 24, height, true)
         {
             SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
-
-            armEnd = GFX.Game["objects/VortexHelper/squareBumperNew/armEnd"];
             arm = GFX.Game.GetAtlasSubtextures("objects/VortexHelper/squareBumperNew/arm");
 
             this.maxLength = Math.Abs(maxLength);
 
-            Vector2 middle = new Vector2(12, 12);
-
-            block = VortexHelperModule.LillySpriteBank.Create("lillyBlock");
-            block.Position = middle;
-            Add(block);
+            Vector2 middle = new Vector2(Width, height) / 2;
 
             Add(sfx = new SoundSource()
             {
@@ -124,7 +126,7 @@ namespace Celeste.Mod.VortexHelper.Entities
             });
 
             face = VortexHelperModule.LillySpriteBank.Create("lillyFace");
-            face.Position = new Vector2(12, 13);
+            face.Position = middle + Vector2.UnitY;
             face.Color = IdleColor;
             Add(face);
 
@@ -159,18 +161,16 @@ namespace Celeste.Mod.VortexHelper.Entities
             yield return .5f;
 
             // Arms extend.
-            leftArmOffset = 0f;
-            rightArmOffset = 0f;
+            rightLength = leftLength = 0f;
             bloom.Visible = true;
-            block.Play("active", true);
             Input.Rumble(RumbleStrength.Medium, RumbleLength.Short);
             level.DirectionalShake(Vector2.UnitX, 0.1f);
             armsExtended = true;
 
             sfx.Play(CustomSFX.game_lilly_conveyor, "end", 0f);
 
-            LillyArmEnd rightArmEnd = new LillyArmEnd(Position + new Vector2(Width - 6, 0), rightStaticMovers);
-            LillyArmEnd leftArmEnd = new LillyArmEnd(Position, leftStaticMovers);
+            LillyArmEnd rightArmEnd = new LillyArmEnd(Position + new Vector2(Width - 6, 0), (int)Height - 9, rightStaticMovers);
+            LillyArmEnd leftArmEnd = new LillyArmEnd(Position, (int)Height - 9, leftStaticMovers);
             LillyArm rightArm = new LillyArm(new Vector2(X + Width, Y), rightArmEnd, (int)(X + Width), 6);
             LillyArm leftArm = new LillyArm(new Vector2(X + 6, Y), leftArmEnd, (int)X, 0);
             AddArm(rightArmEnd, rightArm); AddArm(leftArmEnd, leftArm);
@@ -220,8 +220,8 @@ namespace Celeste.Mod.VortexHelper.Entities
                         Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
                     }
                 }
-                leftArmOffset = leftArmEnd.Distance;
-                rightArmOffset = rightArmEnd.Distance;
+                rightLength = rightArmEnd.Distance;
+                leftLength = leftArmEnd.Distance;
                 Collidable = true;
                 yield return null;
             }
@@ -273,8 +273,8 @@ namespace Celeste.Mod.VortexHelper.Entities
                     leftArm.UpdateArm(move);
                     leftArmExtended = !finished;
                 }
-                leftArmOffset = leftArmEnd.Distance;
-                rightArmOffset = rightArmEnd.Distance;
+                rightLength = rightArmEnd.Distance;
+                leftLength = leftArmEnd.Distance;
                 yield return null;
             }
 
@@ -283,7 +283,6 @@ namespace Celeste.Mod.VortexHelper.Entities
             sfx.Param("end", 1f);
             faceState = FaceState.IdleAlt;
             face.Play("end_retract");
-            block.Play("inactive", true);
             ChangeColor(IdleAltColor);
 
             armsExtended = false;
@@ -314,7 +313,7 @@ namespace Celeste.Mod.VortexHelper.Entities
         private void UpdateFace()
         {
             scale = Calc.Approach(scale, Vector2.One, Engine.DeltaTime * 4f);
-            face.Scale = block.Scale = scale;
+            face.Scale = scale;
 
             colorLerp = Calc.Approach(colorLerp, 1f, Engine.DeltaTime * 3f);
             face.Color = Color.Lerp(colorFrom, colorTo, colorLerp);
@@ -396,29 +395,81 @@ namespace Celeste.Mod.VortexHelper.Entities
             Vector2 pos = Position;
             Position += Shake;
 
-            Vector2 leftArmPos = Position + new Vector2(8 + leftArmOffset, 0);
-            Vector2 rightArmPos = Position + new Vector2(Width - 8 + rightArmOffset, 0);
+            Vector2 leftArmPos = Position + new Vector2(8 + leftLength, 0);
+            Vector2 rightArmPos = Position + new Vector2(Width - 8 + rightLength, 0);
+
+            int frame = (int)(Scene.TimeActive * 12) % 2;
 
             if (armsExtended)
             {
-                MTexture armTexture = arm[(int)(Scene.TimeActive * 12) % 2];
-                for(int i = (int)leftArmPos.X - 8; i <= Left + 8; i += 8)
+                MTexture armTexture = arm[frame];
+                int x = (int)(rightLength + 16);
+                while(x > 8)
                 {
-                    armTexture.Draw(new Vector2(i, Y));
+                    armTexture.Draw(new Vector2(X + x, Y));
+                    x -= 8;
                 }
-                for (int i = (int)rightArmPos.X - 1; i >= Right - 16; i -= 8)
+                x = (int)(leftLength);
+                while (x < 8)
                 {
-                    armTexture.Draw(new Vector2(i, Y));
+                    armTexture.Draw(new Vector2(X + x, Y));
+                    x += 8;
+                }
+            }
+
+            int h = (int)(Height / 8);
+            Vector2 renderOffset = Vector2.One * 4;
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < h; j++)
+                {
+                    int ty = (j == 0 ? 0 : (j == h - 1 ? 3 : (j == h - 2 ? 2 : 1)));
+                    MTexture tile = blockTextures[i, ty, frame, armsExtended ? 1 : 0];
+
+
+                    Vector2 p = Position + new Vector2(i * 8, j * 8);
+                    Vector2 newPos = base.Center + ((p - base.Center) * scale) + base.Shake;
+
+                    tile.DrawCentered(newPos + renderOffset, Color.White, scale);
                 }
             }
 
             base.Render();
             if (armsExtended)
             {
-                armEnd.Draw(rightArmPos);
-                armEnd.Draw(leftArmPos, Vector2.Zero, Color.White, new Vector2(-1, 1));
+                for (int j = 0; j < h; j++)
+                {
+                    int ty = (j == 0 ? 0 : (j == h - 1 ? 3 : (j == h - 2 ? 2 : 1)));
+                    MTexture armEnd = armEndTextures[ty];
+                    Vector2 yOffset = Vector2.UnitY * j * 8;
+                    armEnd.Draw(rightArmPos + yOffset);
+                    armEnd.Draw(leftArmPos + yOffset, Vector2.Zero, Color.White, new Vector2(-1, 1));
+                }
             }
             Position = pos;
+        }
+
+        public static void InitializeTextures()
+        {
+            MTexture block00 = GFX.Game["objects/VortexHelper/squareBumperNew/block00"];
+            MTexture block01 = GFX.Game["objects/VortexHelper/squareBumperNew/block01"];
+            MTexture active_block00 = GFX.Game["objects/VortexHelper/squareBumperNew/active_block00"];
+            MTexture active_block01 = GFX.Game["objects/VortexHelper/squareBumperNew/active_block01"];
+            MTexture armend = GFX.Game["objects/VortexHelper/squareBumperNew/armend"];
+
+            for (int j = 0; j < 4; j++)
+            {
+                int ty = (j == 0 ? 0 : (j == 3 ? 16 : (j == 2 ? 8 : 24)));
+                for (int i = 0; i < 3; i++)
+                {
+                    int tx = i * 8;
+                    blockTextures[i, j, 0, 0] = block00.GetSubtexture(tx, ty, 8, 8);
+                    blockTextures[i, j, 1, 0] = block01.GetSubtexture(tx, ty, 8, 8);
+                    blockTextures[i, j, 0, 1] = active_block00.GetSubtexture(tx, ty, 8, 8);
+                    blockTextures[i, j, 1, 1] = active_block01.GetSubtexture(tx, ty, 8, 8);
+                }
+                armEndTextures[j] = armend.GetSubtexture(0, ty, 8, 8);
+            }
         }
     }
 }

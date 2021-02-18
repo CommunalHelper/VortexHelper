@@ -58,6 +58,7 @@ namespace Celeste.Mod.VortexHelper
             BubbleWrapBlock.InitializeParticles();
 
             LillySpriteBank = new SpriteBank(GFX.Game, "Graphics/LillySprites.xml");
+            Lilly.InitializeTextures();
         }
         public override void Load()
         {
