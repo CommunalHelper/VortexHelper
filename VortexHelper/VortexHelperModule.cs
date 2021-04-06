@@ -80,7 +80,6 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.FallingBlock.LandParticles += FallingBlock_LandParticles;
 
             On.Celeste.CrushBlock.Update += CrushBlock_Update;
-            On.Celeste.CrushBlock.ctor_EntityData_Vector2 += CrushBlock_ctor_EntityData_Vector2;
         }
 
         public override void Unload()
@@ -103,7 +102,6 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.FallingBlock.LandParticles -= FallingBlock_LandParticles;
 
             On.Celeste.CrushBlock.Update -= CrushBlock_Update;
-            On.Celeste.CrushBlock.ctor_EntityData_Vector2 -= CrushBlock_ctor_EntityData_Vector2;
         }
 
         private void Player_DashEnd(On.Celeste.Player.orig_DashEnd orig, Player self)
@@ -124,13 +122,8 @@ namespace Celeste.Mod.VortexHelper
                     PurpleBooster.PurpleBoosterExplodeLaunch(self, new DynData<Player>(self), self.Center - self.DashDir, null, -1f);
                     return;
                 }
-            }
-        }
 
-        private void CrushBlock_ctor_EntityData_Vector2(On.Celeste.CrushBlock.orig_ctor_EntityData_Vector2 orig, CrushBlock self, EntityData data, Vector2 offset)
-        {
-            orig(self, data, offset);
-            new DynData<CrushBlock>(self).Set("oldCrushDir", Vector2.Zero);
+            }
         }
 
         private void CrushBlock_Update(On.Celeste.CrushBlock.orig_Update orig, CrushBlock self)
@@ -139,7 +132,15 @@ namespace Celeste.Mod.VortexHelper
             DynData<CrushBlock> data = new DynData<CrushBlock>(self);
 
             Vector2 crushDir = data.Get<Vector2>("crushDir");
-            Vector2 oldCrushDir = data.Get<Vector2>("oldCrushDir");
+
+            Vector2 oldCrushDir;
+            if (data.Data.TryGetValue("oldCrushDir", out object value) && value is Vector2 vec)
+            {
+                oldCrushDir = vec;
+            } else
+            {
+                data["oldCrushDir"] = oldCrushDir = Vector2.Zero;
+            }
 
             if (oldCrushDir != Vector2.Zero && crushDir == Vector2.Zero)
             {
