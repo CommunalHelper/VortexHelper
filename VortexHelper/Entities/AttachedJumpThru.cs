@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
+using System;
 
 namespace Celeste.Mod.VortexHelper.Entities
 {
@@ -146,7 +147,6 @@ namespace Celeste.Mod.VortexHelper.Entities
                 MoveHNaive(moveH);
                 MoveVNaive(moveV);
             }
-
             else
             {
                 MoveH(moveH);
@@ -210,6 +210,26 @@ namespace Celeste.Mod.VortexHelper.Entities
             {
                 Platform.OnStaticMoverTrigger(staticMover);
             }
+        }
+
+        public override void MoveHExact(int move) {
+            if (Collidable) {
+                foreach (Actor entity in base.Scene.Tracker.GetEntities<Actor>()) {
+                    if (entity.IsRiding(this)) {
+                        Collidable = false;
+                        if (entity.TreatNaive) {
+                            entity.NaiveMove(Vector2.UnitX * move);
+                        }
+                        else {
+                            entity.MoveHExact(move);
+                        }
+                        entity.LiftSpeed = LiftSpeed;
+                        Collidable = true;
+                    }
+                }
+            }
+            base.X += move;
+            MoveStaticMovers(Vector2.UnitX * move);
         }
     }
 }
