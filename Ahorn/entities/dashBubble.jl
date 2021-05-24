@@ -5,11 +5,11 @@ using ..Ahorn, Maple
     spiked::Bool = false, singleUse::Bool = false, wobble::Bool = true)
 
 const placements = Ahorn.PlacementDict(
-    "Dash Bubble (Vortex Helper) (IN BETA)" => Ahorn.EntityPlacement(
+    "Dash Bubble (Vortex Helper)" => Ahorn.EntityPlacement(
         DashBubble,
 		"point"
     ),
-    "Dash Bubble (Spiked) (Vortex Helper) (IN BETA)" => Ahorn.EntityPlacement(
+    "Dash Bubble (Spiked) (Vortex Helper)" => Ahorn.EntityPlacement(
         DashBubble,
 		"point",
 		Dict{String, Any}(

@@ -6,7 +6,7 @@ width::Integer=8, texture::String="wood", surfaceIndex::Int=-1)
 
 const textures = ["wood", "dream", "temple", "templeB", "cliffside", "reflection", "core", "moon"]
 const placements = Ahorn.PlacementDict(
-    "Attached Jump Through ($(uppercasefirst(texture))) (Vortex Helper) (IN BETA)" => Ahorn.EntityPlacement(
+    "Attached Jump Through ($(uppercasefirst(texture))) (Vortex Helper)" => Ahorn.EntityPlacement(
         AttachedJumpThru,
         "rectangle",
         Dict{String, Any}(
