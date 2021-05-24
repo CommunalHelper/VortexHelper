@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.29806.167
+VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VortexHelper", "VortexHelper/VortexHelper.csproj", "{6CA9A07E-7B0D-4B60-AF72-BC147E5513B7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vortex-helper", "source\vortex-helper.csproj", "{4302273A-420A-4FB9-A20E-9F0A2D79CE84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6CA9A07E-7B0D-4B60-AF72-BC147E5513B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6CA9A07E-7B0D-4B60-AF72-BC147E5513B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6CA9A07E-7B0D-4B60-AF72-BC147E5513B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6CA9A07E-7B0D-4B60-AF72-BC147E5513B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4302273A-420A-4FB9-A20E-9F0A2D79CE84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4302273A-420A-4FB9-A20E-9F0A2D79CE84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4302273A-420A-4FB9-A20E-9F0A2D79CE84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4302273A-420A-4FB9-A20E-9F0A2D79CE84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {362CA5A8-3558-410B-981A-C75252DEB582}
+		SolutionGuid = {49878BD2-DCFB-4A21-9D5F-C36235BCB394}
 	EndGlobalSection
 EndGlobal

@@ -8,10 +8,8 @@ using System;
 using System.Collections;
 using System.Reflection;
 
-namespace Celeste.Mod.VortexHelper
-{
-    class VortexHelperModule : EverestModule
-    {
+namespace Celeste.Mod.VortexHelper {
+    class VortexHelperModule : EverestModule {
         public static VortexHelperModule Instance;
 
         public static SpriteBank FloorBoosterSpriteBank;
@@ -36,13 +34,11 @@ namespace Celeste.Mod.VortexHelper
         public override Type SessionType => typeof(VortexHelperSession);
         public static VortexHelperSession SessionProperties => (VortexHelperSession)Instance._Session;
 
-        public VortexHelperModule()
-        {
+        public VortexHelperModule() {
             Instance = this;
         }
 
-        public override void LoadContent(bool firstLoad)
-        {
+        public override void LoadContent(bool firstLoad) {
             FloorBoosterSpriteBank = new SpriteBank(GFX.Game, "Graphics/FloorBoosterSprites.xml");
 
             PufferBowlSpriteBank = new SpriteBank(GFX.Game, "Graphics/BowlPufferSprites.xml");
@@ -60,8 +56,7 @@ namespace Celeste.Mod.VortexHelper
             LillySpriteBank = new SpriteBank(GFX.Game, "Graphics/LillySprites.xml");
             Lilly.InitializeTextures();
         }
-        public override void Load()
-        {
+        public override void Load() {
             IL.Celeste.Player.NormalUpdate += Player_FrictionNormalUpdate;
             On.Celeste.Player.NormalUpdate += Player_NormalUpdate;
             On.Celeste.Player.NormalBegin += Player_NormalBegin;
@@ -82,8 +77,7 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.CrushBlock.Update += CrushBlock_Update;
         }
 
-        public override void Unload()
-        {
+        public override void Unload() {
             IL.Celeste.Player.NormalUpdate -= Player_FrictionNormalUpdate;
             On.Celeste.Player.NormalUpdate -= Player_NormalUpdate;
             On.Celeste.Player.NormalBegin -= Player_NormalBegin;
@@ -104,19 +98,16 @@ namespace Celeste.Mod.VortexHelper
             On.Celeste.CrushBlock.Update -= CrushBlock_Update;
         }
 
-        private void Player_DashEnd(On.Celeste.Player.orig_DashEnd orig, Player self)
-        {
+        private void Player_DashEnd(On.Celeste.Player.orig_DashEnd orig, Player self) {
             orig(self);
-            foreach (PurpleBooster b in self.Scene.Tracker.GetEntities<PurpleBooster>())
-            {
-                if (b.BoostingPlayer)
-                {
+            foreach (PurpleBooster b in self.Scene.Tracker.GetEntities<PurpleBooster>()) {
+                if (b.BoostingPlayer) {
                     b.BoostingPlayer = false;
-                    foreach(PurpleBooster other_booster in self.Scene.Tracker.GetEntities<PurpleBooster>())
-                    {
-                        if (other_booster != b)
-                        {
-                            if(self.CollideCheck(other_booster)) return;
+                    foreach (PurpleBooster other_booster in self.Scene.Tracker.GetEntities<PurpleBooster>()) {
+                        if (other_booster != b) {
+                            if (self.CollideCheck(other_booster)) {
+                                return;
+                            }
                         }
                     }
                     PurpleBooster.PurpleBoosterExplodeLaunch(self, new DynData<Player>(self), self.Center - self.DashDir, null, -1f);
@@ -126,36 +117,29 @@ namespace Celeste.Mod.VortexHelper
             }
         }
 
-        private void CrushBlock_Update(On.Celeste.CrushBlock.orig_Update orig, CrushBlock self)
-        {
+        private void CrushBlock_Update(On.Celeste.CrushBlock.orig_Update orig, CrushBlock self) {
             orig(self);
             DynData<CrushBlock> data = new DynData<CrushBlock>(self);
 
             Vector2 crushDir = data.Get<Vector2>("crushDir");
 
             Vector2 oldCrushDir;
-            if (data.Data.TryGetValue("oldCrushDir", out object value) && value is Vector2 vec)
-            {
+            if (data.Data.TryGetValue("oldCrushDir", out object value) && value is Vector2 vec) {
                 oldCrushDir = vec;
-            } else
-            {
+            }
+            else {
                 data["oldCrushDir"] = oldCrushDir = Vector2.Zero;
             }
 
-            if (oldCrushDir != Vector2.Zero && crushDir == Vector2.Zero)
-            {
+            if (oldCrushDir != Vector2.Zero && crushDir == Vector2.Zero) {
                 // we hit something!
-                foreach (BubbleWrapBlock e in self.Scene.Tracker.GetEntities<BubbleWrapBlock>())
-                {
-                    if (self.CollideCheck(e, self.Position + oldCrushDir))
-                    {
+                foreach (BubbleWrapBlock e in self.Scene.Tracker.GetEntities<BubbleWrapBlock>()) {
+                    if (self.CollideCheck(e, self.Position + oldCrushDir)) {
                         e.Break();
                     }
                 }
-                foreach (ColorSwitch e in self.Scene.Tracker.GetEntities<ColorSwitch>())
-                {
-                    if (self.CollideCheck(e, self.Position + oldCrushDir))
-                    {
+                foreach (ColorSwitch e in self.Scene.Tracker.GetEntities<ColorSwitch>()) {
+                    if (self.CollideCheck(e, self.Position + oldCrushDir)) {
                         e.Switch(oldCrushDir);
                     }
                 }
@@ -163,83 +147,71 @@ namespace Celeste.Mod.VortexHelper
             data.Set("oldCrushDir", crushDir);
         }
 
-        private void FallingBlock_LandParticles(On.Celeste.FallingBlock.orig_LandParticles orig, FallingBlock self)
-        {
+        private void FallingBlock_LandParticles(On.Celeste.FallingBlock.orig_LandParticles orig, FallingBlock self) {
             orig(self);
-            foreach(BubbleWrapBlock e in self.Scene.Tracker.GetEntities<BubbleWrapBlock>())
-            {
-                if (self.CollideCheck(e, self.Position + Vector2.UnitY))
-                {
+            foreach (BubbleWrapBlock e in self.Scene.Tracker.GetEntities<BubbleWrapBlock>()) {
+                if (self.CollideCheck(e, self.Position + Vector2.UnitY)) {
                     e.Break();
                 }
             }
-            foreach (ColorSwitch e in self.Scene.Tracker.GetEntities<ColorSwitch>())
-            {
-                if (self.CollideCheck(e, self.Position + Vector2.UnitY))
-                {
+            foreach (ColorSwitch e in self.Scene.Tracker.GetEntities<ColorSwitch>()) {
+                if (self.CollideCheck(e, self.Position + Vector2.UnitY)) {
                     e.Switch(Vector2.UnitY);
                 }
             }
         }
 
-        private void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self)
-        {
+        private void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self) {
             orig(self);
-            if (!self.Collidable) return;
-            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>())
-            {
+            if (!self.Collidable) {
+                return;
+            }
+
+            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>()) {
                 barrier.Collidable = true;
             }
 
             PufferBarrier collided = self.CollideFirst<PufferBarrier>();
-            if (collided != null)
-            {
+            if (collided != null) {
                 collided.OnTouchPuffer();
 
                 Puffer_Explode.Invoke(self, new object[] { });
                 Puffer_GotoGone.Invoke(self, new object[] { });
             }
 
-            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>())
-            {
+            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>()) {
                 barrier.Collidable = false;
             }
         }
 
-        private void Spring_orig(On.Celeste.Spring.orig_ctor_Vector2_Orientations_bool orig, Spring self, Vector2 position, Spring.Orientations orientation, bool playerCanUse)
-        {
+        private void Spring_orig(On.Celeste.Spring.orig_ctor_Vector2_Orientations_bool orig, Spring self, Vector2 position, Spring.Orientations orientation, bool playerCanUse) {
             orig(self, position, orientation, playerCanUse);
             self.Add(new BowlPuffer.BowlPufferCollider(Spring_OnBowlPuffer));
         }
 
-        private void Spring_OnBowlPuffer(BowlPuffer puffer, Spring self)
-        {
+        private void Spring_OnBowlPuffer(BowlPuffer puffer, Spring self) {
             puffer.HitSpring(self);
             Spring_BounceAnimate.Invoke(self, new object[] { });
         }
 
-        private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self)
-        {
+        private void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
             orig(self);
 
             // Allows for PufferBarrier entities to be rendered with just one PufferBarrierRenderer.
             self.Level.Add(new PufferBarrierRenderer());
         }
 
-        private void Player_DashBegin(On.Celeste.Player.orig_DashBegin orig, Player self)
-        {
+        private void Player_DashBegin(On.Celeste.Player.orig_DashBegin orig, Player self) {
             // Fix
             orig(self);
-            var playerData = new DynData<Player>(self);
-            if (playerData.Get<bool>("purpleBoosterEarlyExit"))
-            {
+            DynData<Player> playerData = new DynData<Player>(self);
+            if (playerData.Get<bool>("purpleBoosterEarlyExit")) {
                 --self.Dashes;
                 playerData.Set("purpleBoosterEarlyExit", false);
             }
         }
 
-        private void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode)
-        {
+        private void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {
             orig(self, position, spriteMode);
 
             AllowPlayerDashRefills = true;
@@ -247,8 +219,8 @@ namespace Celeste.Mod.VortexHelper
             // Custom Purple Booster State
             PurpleBoosterState = self.StateMachine.AddState(
                 new Func<int>(PurpleBooster.PurpleBoostUpdate),
-                PurpleBooster.PurpleBoostCoroutine, 
-                PurpleBooster.PurpleBoostBegin, 
+                PurpleBooster.PurpleBoostCoroutine,
+                PurpleBooster.PurpleBoostBegin,
                 PurpleBooster.PurpleBoostEnd);
             LavenderBoosterState = self.StateMachine.AddState(
                 new Func<int>(PurpleBooster.LavenderBoostUpdate),
@@ -261,49 +233,49 @@ namespace Celeste.Mod.VortexHelper
                 PurpleBooster.PurpleDashingBegin);
         }
 
-        private bool Player_RefillDash(On.Celeste.Player.orig_RefillDash orig, Player self)
-        {
-            if (!AllowPlayerDashRefills) return false;
+        private bool Player_RefillDash(On.Celeste.Player.orig_RefillDash orig, Player self) {
+            if (!AllowPlayerDashRefills) {
+                return false;
+            }
 
             // Fix crashes with vanilla entities that refill the dash.
-            if (self.Scene == null || self.Dead) return false;
+            if (self.Scene == null || self.Dead) {
+                return false;
+            }
 
-            foreach(FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>())
-            {
-                if (!entity.IceMode) continue;
+            foreach (FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>()) {
+                if (!entity.IceMode) {
+                    continue;
+                }
 
                 if (self.CollideCheck(entity) && self.OnGround()
-                    && self.Bottom <= entity.Bottom && entity.NoRefillsOnIce)
-                {
+                    && self.Bottom <= entity.Bottom && entity.NoRefillsOnIce) {
                     return false;
                 }
             }
             return orig(self);
         }
 
-        private void Player_FrictionNormalUpdate(ILContext il)
-        {
+        private void Player_FrictionNormalUpdate(ILContext il) {
             ILCursor cursor = new ILCursor(il);
 
-            if(cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdcR4(0.65f)) 
-                && cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdcR4(1f)))
-            {
+            if (cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdcR4(0.65f))
+                && cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdcR4(1f))) {
                 cursor.EmitDelegate<Func<float>>(GetPlayerFriction);
                 cursor.Emit(OpCodes.Mul);
             }
         }
 
-        private float GetPlayerFriction()
-        {
+        private float GetPlayerFriction() {
             Player player = GetPlayer();
-            if (player != null)
-            {
-                foreach (FloorBooster entity in player.Scene.Tracker.GetEntities<FloorBooster>())
-                {
-                    if (!entity.IceMode) continue;
+            if (player != null) {
+                foreach (FloorBooster entity in player.Scene.Tracker.GetEntities<FloorBooster>()) {
+                    if (!entity.IceMode) {
+                        continue;
+                    }
+
                     if (player.CollideCheck(entity) && player.OnGround() && player.StateMachine != 1
-                        && player.Bottom <= entity.Bottom)
-                    {
+                        && player.Bottom <= entity.Bottom) {
                         return player.SceneAs<Level>().CoreMode == Session.CoreModes.Cold ? 0.4f : 0.2f;
                     }
                 }
@@ -312,8 +284,7 @@ namespace Celeste.Mod.VortexHelper
             return 1f;
         }
 
-        private void Player_NormalBegin(On.Celeste.Player.orig_NormalBegin orig, Player self)
-        {
+        private void Player_NormalBegin(On.Celeste.Player.orig_NormalBegin orig, Player self) {
             orig(self);
             DynData<Player> playerData = new DynData<Player>(self);
             playerData.Set("floorBoosterSpeed", 0f);
@@ -321,23 +292,22 @@ namespace Celeste.Mod.VortexHelper
             playerData.Set("purpleBoosterEarlyExit", false);
         }
 
-        private int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self)
-        {
+        private int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self) {
             DynData<Player> playerData = new DynData<Player>(self);
 
             // thanks max480 for the bug report.
-            if (!playerData.Data.ContainsKey("lastFloorBooster")) playerData.Set<FloorBooster>("lastFloorBooster", null);
+            if (!playerData.Data.ContainsKey("lastFloorBooster")) {
+                playerData.Set<FloorBooster>("lastFloorBooster", null);
+            }
 
             FloorBooster lastFloorBooster = playerData.Get<FloorBooster>("lastFloorBooster");
 
-            if (lastFloorBooster != null && !self.CollideCheck(lastFloorBooster))
-            {
+            if (lastFloorBooster != null && !self.CollideCheck(lastFloorBooster)) {
                 Vector2 vec = Vector2.UnitX
                     * playerData.Get<float>("floorBoosterSpeed")
                     * (lastFloorBooster.Facing == Facings.Right ? lastFloorBooster.MoveSpeed : -lastFloorBooster.MoveSpeed);
-                    
-                if (self.OnGround())
-                {
+
+                if (self.OnGround()) {
                     self.LiftSpeed += vec / 1.6f;
                 }
                 self.Speed += vec / 1.6f;
@@ -345,14 +315,13 @@ namespace Celeste.Mod.VortexHelper
             }
             bool touchedFloorBooster = false;
             float floorBoosterSpeed = 0f;
-            foreach (FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>())
-            {
-                if (entity.IceMode) continue;
+            foreach (FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>()) {
+                if (entity.IceMode) {
+                    continue;
+                }
 
-                if(self.CollideCheck(entity) && self.OnGround() && self.StateMachine != 1 && self.Bottom <= entity.Bottom)
-                {
-                    if (!touchedFloorBooster)
-                    {
+                if (self.CollideCheck(entity) && self.OnGround() && self.StateMachine != 1 && self.Bottom <= entity.Bottom) {
+                    if (!touchedFloorBooster) {
                         floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 1f, 4f * Engine.DeltaTime);
                         touchedFloorBooster = true;
                     }
@@ -363,35 +332,33 @@ namespace Celeste.Mod.VortexHelper
                     playerData.Set("lastFloorBooster", entity);
                 }
             }
-            if (!touchedFloorBooster) floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 0f, 4f * Engine.DeltaTime);
+            if (!touchedFloorBooster) {
+                floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 0f, 4f * Engine.DeltaTime);
+            }
+
             playerData.Set("floorBoosterSpeed", floorBoosterSpeed);
 
 
             return orig(self);
         }
 
-        public static Player GetPlayer()
-        {
-            try
-            {
+        public static Player GetPlayer() {
+            try {
                 return (Engine.Scene as Level).Tracker.GetEntity<Player>();
             }
-            catch (NullReferenceException)
-            {
+            catch (NullReferenceException) {
                 return null;
             }
         }
     }
 
-    
-    public static class StateMachineExt
-    {
+
+    public static class StateMachineExt {
         /// <summary>
         /// Adds a state to a StateMachine
         /// </summary>
         /// <returns>The index of the new state</returns>
-        public static int AddState(this StateMachine machine, Func<int> onUpdate, Func<IEnumerator> coroutine = null, Action begin = null, Action end = null)
-        {
+        public static int AddState(this StateMachine machine, Func<int> onUpdate, Func<IEnumerator> coroutine = null, Action begin = null, Action end = null) {
             Action[] begins = (Action[])StateMachine_begins.GetValue(machine);
             Func<int>[] updates = (Func<int>[])StateMachine_updates.GetValue(machine);
             Action[] ends = (Action[])StateMachine_ends.GetValue(machine);

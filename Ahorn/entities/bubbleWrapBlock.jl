@@ -4,7 +4,7 @@ using ..Ahorn, Maple
 @mapdef Entity "VortexHelper/BubbleWrapBlock" BubbleWrapBlock(x::Integer, y::Integer, width::Integer=8, height::Integer=8, canDash::Bool=true, respawnTime::Number=3.0)
 
 const placements = Ahorn.PlacementDict(
-    "Respawning Dash Block (Vortex Helper)" => Ahorn.EntityPlacement(
+    "Respawning Dash Block (Vortex Helper) (IN BETA)" => Ahorn.EntityPlacement(
         BubbleWrapBlock,
 		"rectangle"
     )

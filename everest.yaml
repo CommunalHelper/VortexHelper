@@ -1,7 +1,6 @@
 - Name: VortexHelper
-  Authors: pixelator, caterpillar
-  Version: 1.2.0
-  DLL: VortexHelper.dll
+  Version: 1.1.0
+  DLL: source/bin/Debug/VortexHelper.dll
   Dependencies:
     - Name: Everest
       Version: 1.2803.0
