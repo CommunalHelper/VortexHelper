@@ -7,12 +7,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/BowlPuffer")]
     class BowlPuffer : Actor {
 
-        private enum States {
-            Hit,
-            Gone,
-            Crystal
-        }
-
         [Tracked(false)]
         public class BowlPufferCollider : Component {
             public Action<BowlPuffer, Spring> OnCollide;
@@ -37,28 +31,24 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
         }
 
-
-        private Facings facing = Facings.Right;
-
         private static ParticleType P_Shatter, P_Crystal;
 
+        private enum States {
+            Gone,
+            Crystal
+        }
         private States state = States.Crystal;
+        private Facings facing = Facings.Right;
 
         private bool noRespawn;
 
+        // Uses three sprites so that we can play the vanilla puffer animations without extra sprite work.
         private Sprite pufferBowlBottom, puffer, pufferBowlTop;
-
-        private Vector2 anchorPosition;
-        private SineWave idleSine;
 
         private Vector2 startPosition;
         private SimpleCurve returnCurve;
         private float goneTimer;
         private float eyeSpin;
-
-        private Vector2 hitSpeed;
-        private Vector2 lastSpeedPosition;
-        private Vector2 lastSinePosition;
 
         private Vector2 previousPosition;
         private Vector2 Speed;
@@ -66,11 +56,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private float noGravityTimer;
         private float cantExplodeTimer;
-        private float alertTimer;
-        private float cannotHitTimer;
         private float shatterTimer;
 
-        private float ExplodeTimer;
+        private float explodeTimer;
         private float explodeTimeLeft;
         private bool fused = false;
 
@@ -78,12 +66,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private Vector2 lastPlayerPos;
 
         private Wiggler inflateWiggler;
-        private Wiggler bounceWiggler;
         private Vector2 scale;
 
         private bool exploded = false;
 
-        private Circle pushRadius, detectRadius;
+        private Circle pushRadius;
 
         private Level Level;
         private Holdable Hold;
@@ -99,7 +86,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private bool chainExplode = false;
 
         // TODO: Custom sound.
-
+        // TODO: Clean and remove jank.
 
         public BowlPuffer(EntityData data, Vector2 offset)
             : this(data.Position + offset + (Vector2.UnitY * 8f), data.Bool("noRespawn"), data.Float("explodeTimer", 0f)) { }
@@ -107,12 +94,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public BowlPuffer(Vector2 position, bool noRespawn, float explodeTimer)
             : base(position) {
             this.noRespawn = noRespawn;
-            ExplodeTimer = explodeTimer;
+            this.explodeTimer = explodeTimer;
             previousPosition = position;
             startPosition = position;
             base.Depth = 100;
             base.Collider = new Hitbox(8f, 10f, -4f, -10f);
-            Add(new PlayerCollider(OnPlayer, new Hitbox(14f, 12f, -6f, -17f)));
 
             Add(pufferBowlBottom = VortexHelperModule.PufferBowlSpriteBank.Create("pufferBowlBottom"));
             Add(puffer = GFX.SpriteBank.Create("pufferFish"));
@@ -123,9 +109,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Vector2 bowlOffset = new Vector2(-32, -43);
             pufferBowlTop.Position = pufferBowlBottom.Position += bowlOffset;
 
-
             pushRadius = new Circle(40f);
-            detectRadius = new Circle(32f);
 
             inflateWiggler = Wiggler.Create(0.6f, 2f);
             Add(inflateWiggler);
@@ -145,14 +129,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
             onCollideH = OnCollideH;
             onCollideV = OnCollideV;
 
-            idleSine = new SineWave(0.5f, 0f);
-            idleSine.Randomize();
-            Add(idleSine);
-
-            Add(bounceWiggler = Wiggler.Create(0.6f, 2.5f, delegate (float v) {
-                puffer.Rotation = v * 20f * ((float)Math.PI / 180f);
-            }));
-
             scale = Vector2.One;
 
             LiftSpeedGraceTime = 0.1f;
@@ -164,27 +140,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
             pufferBowlBottom.Play(anim);
             puffer.Play(anim);
             pufferBowlTop.Play(anim);
-        }
-
-        private void OnPlayer(Player player) {
-            if (state == States.Gone || state == States.Crystal || !(cantExplodeTimer <= 0f)) {
-                return;
-            }
-            if (cannotHitTimer <= 0f) {
-                if (player.Bottom > lastSpeedPosition.Y + 3f) {
-                    Explode();
-                    GotoGone();
-                }
-                else {
-                    player.Bounce(base.Top);
-                    GotoHit();
-                    MoveToX(anchorPosition.X);
-                    idleSine.Reset();
-                    anchorPosition = (lastSinePosition = Position);
-                    eyeSpin = 1f;
-                }
-            }
-            cannotHitTimer = 0.1f;
         }
 
         public override void Added(Scene scene) {
@@ -304,40 +259,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
         }
         public bool HitSpring(Spring spring) {
-            if (state == States.Hit) {
-                switch (spring.Orientation) {
-                    default:
-                        if (hitSpeed.Y >= 0f) {
-                            GotoHitSpeed(224f * -Vector2.UnitY);
-                            MoveTowardsX(spring.CenterX, 4f);
-                            bounceWiggler.Start();
-                            Alert(restart: true, playSfx: false);
-                            return true;
-                        }
-                        return false;
-                    case Spring.Orientations.WallLeft:
-                        if (hitSpeed.X <= 60f) {
-                            facing = Facings.Right;
-                            GotoHitSpeed(280f * Vector2.UnitX);
-                            MoveTowardsY(spring.CenterY, 4f);
-                            bounceWiggler.Start();
-                            Alert(restart: true, playSfx: false);
-                            return true;
-                        }
-                        return false;
-                    case Spring.Orientations.WallRight:
-                        if (hitSpeed.X >= -60f) {
-                            facing = Facings.Left;
-                            GotoHitSpeed(280f * -Vector2.UnitX);
-                            MoveTowardsY(spring.CenterY, 4f);
-                            bounceWiggler.Start();
-                            Alert(restart: true, playSfx: false);
-                            return true;
-                        }
-                        return false;
-                }
-            }
-            else if (!Hold.IsHeld) {
+            if (!Hold.IsHeld) {
                 if (spring.Orientation == Spring.Orientations.Floor && Speed.Y >= 0f) {
                     Speed.X *= 0.5f;
                     Speed.Y = -160f;
@@ -365,20 +287,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private void OnPickup() {
             Speed = Vector2.Zero;
             AddTag(Tags.Persistent);
-        }
-
-        private void GotoHit() {
-            scale = new Vector2(1.2f, 0.8f);
-            hitSpeed = Vector2.UnitY * 200f;
-            state = States.Hit;
-            bounceWiggler.Start();
-            Alert(restart: true, playSfx: false);
-            Audio.Play("event:/new_content/game/10_farewell/puffer_boop", Position);
-        }
-
-        private void GotoHitSpeed(Vector2 speed) {
-            hitSpeed = speed;
-            state = States.Hit;
         }
 
         private void OnRelease(Vector2 force) {
@@ -539,9 +447,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
             returnCurve = new SimpleCurve(Position, startPosition, control);
             Collidable = false;
             goneTimer = 2.5f;
-            if (state == States.Hit) {
-                Collider = new Hitbox(8f, 10f, -4f, -10f);
-            }
 
             state = States.Gone;
             base.Collider = null;
@@ -585,12 +490,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
             return res;
         }
 
-        private void CollideWithSprings() {
-            foreach (BowlPufferCollider c in Scene.Tracker.GetComponents<BowlPufferCollider>()) {
-                c.Check(this);
-            }
-        }
-
         private void PlayerThrowSelf(Player player) {
             if (player != null) {
                 player.Throw();
@@ -617,12 +516,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             if (state != States.Gone && cantExplodeTimer > 0f) {
                 cantExplodeTimer -= Engine.DeltaTime;
-            }
-            if (cannotHitTimer > 0f) {
-                cannotHitTimer -= Engine.DeltaTime;
-            }
-            if (alertTimer > 0f) {
-                alertTimer -= Engine.DeltaTime;
             }
             if (shatterTimer > 0f) {
                 shatterTimer -= 1.5f * Engine.DeltaTime;
@@ -653,7 +546,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     }
                     if (CollidePufferBarrierCheck() && !fused) {
                         fused = true;
-                        explodeTimeLeft = ExplodeTimer;
+                        explodeTimeLeft = explodeTimer;
                         Audio.Play("event:/new_content/game/10_farewell/puffer_expand", Position);
                         puffer.Play("alert");
                     }
@@ -687,7 +580,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
                             return;
                         }
                     }
-
 
                     if (Hold.IsHeld) {
                         prevLiftSpeed = Vector2.Zero;
@@ -776,30 +668,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     }
                     break;
 
-                case States.Hit:
-                    lastSpeedPosition = Position;
-                    MoveH(hitSpeed.X * Engine.DeltaTime, onCollideH);
-                    MoveV(hitSpeed.Y * Engine.DeltaTime, OnCollideV);
-                    anchorPosition = Position;
-                    hitSpeed.X = Calc.Approach(hitSpeed.X, 0f, 150f * Engine.DeltaTime);
-                    hitSpeed = Calc.Approach(hitSpeed, Vector2.Zero, 320f * Engine.DeltaTime);
-                    if (ProximityExplodeCheck()) {
-                        Explode();
-                        GotoGone();
-                        break;
-                    }
-                    if (base.Top >= SceneAs<Level>().Bounds.Bottom + 5) {
-                        puffer.Play("hidden");
-                        GotoGone();
-                        break;
-                    }
-                    CollideWithSprings();
-                    if (hitSpeed == Vector2.Zero) {
-                        ZeroRemainderX();
-                        ZeroRemainderY();
-                    }
-                    break;
-
                 case States.Gone:
                     float num = goneTimer;
                     goneTimer -= Engine.DeltaTime;
@@ -818,35 +686,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     }
                     break;
             }
-        }
-
-        private bool ProximityExplodeCheck() {
-            if (cantExplodeTimer > 0f) {
-                return false;
-            }
-            bool result = false;
-            Collider collider = base.Collider;
-            base.Collider = detectRadius;
-            Player player;
-            if ((player = CollideFirst<Player>()) != null && player.CenterY >= base.Y + collider.Bottom - 4f && !base.Scene.CollideCheck<Solid>(Position, player.Center)) {
-                result = true;
-            }
-            base.Collider = collider;
-            return result;
-        }
-
-        private void Alert(bool restart, bool playSfx) {
-            if (puffer.CurrentAnimationID == "idle") {
-                if (playSfx) {
-                    Audio.Play("event:/new_content/game/10_farewell/puffer_expand", Position);
-                }
-                puffer.Play("alert");
-                inflateWiggler.Start();
-            }
-            else if (restart && playSfx) {
-                Audio.Play("event:/new_content/game/10_farewell/puffer_expand", Position);
-            }
-            alertTimer = 2f;
         }
 
         public override void Render() {
@@ -868,8 +707,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Draw.Point(vector5 + new Vector2(-1, 1), Color.Black);
             }
 
-            if (fused && ExplodeTimer != 0.0f) {
-                float r = explodeTimeLeft / ExplodeTimer;
+            if (fused && explodeTimer != 0.0f) {
+                float r = explodeTimeLeft / explodeTimer;
                 for (float a = 0f; a < Math.PI * 2 * r; a += 0.06f) {
                     Vector2 p = Center + new Vector2((float)Math.Sin(a), -(float)Math.Cos(a)) * 16 - Vector2.UnitY * 5 - Vector2.UnitX;
                     Draw.Point(p, Color.Lerp(Color.OrangeRed, Color.LawnGreen, a / (float)Math.PI));
