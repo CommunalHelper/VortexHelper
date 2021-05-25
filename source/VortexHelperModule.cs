@@ -42,20 +42,21 @@ namespace Celeste.Mod.VortexHelper {
             FloorBoosterSpriteBank = new SpriteBank(GFX.Game, "Graphics/FloorBoosterSprites.xml");
 
             PufferBowlSpriteBank = new SpriteBank(GFX.Game, "Graphics/BowlPufferSprites.xml");
-            BowlPuffer.InitializeParticles();
 
             PurpleBoosterSpriteBank = new SpriteBank(GFX.Game, "Graphics/PurpleBoosterSprites.xml");
             LavenderBoosterSpriteBank = new SpriteBank(GFX.Game, "Graphics/LavenderBoosterSprites.xml");
-            PurpleBooster.InitializeParticles();
 
             VortexBumperSpriteBank = new SpriteBank(GFX.Game, "Graphics/VortexCustomBumperSprites.xml");
-            VortexBumper.InitializeParticles();
-
-            BubbleWrapBlock.InitializeParticles();
 
             LillySpriteBank = new SpriteBank(GFX.Game, "Graphics/LillySprites.xml");
+
+            BowlPuffer.InitializeParticles();
+            PurpleBooster.InitializeParticles();
+            VortexBumper.InitializeParticles();
+            BubbleWrapBlock.InitializeParticles();
             Lilly.InitializeTextures();
         }
+
         public override void Load() {
             IL.Celeste.Player.NormalUpdate += Player_FrictionNormalUpdate;
             On.Celeste.Player.NormalUpdate += Player_NormalUpdate;
@@ -222,11 +223,13 @@ namespace Celeste.Mod.VortexHelper {
                 PurpleBooster.PurpleBoostCoroutine,
                 PurpleBooster.PurpleBoostBegin,
                 PurpleBooster.PurpleBoostEnd);
+
             LavenderBoosterState = self.StateMachine.AddState(
                 new Func<int>(PurpleBooster.LavenderBoostUpdate),
                 PurpleBooster.LavenderBoostCoroutine,
                 PurpleBooster.LavenderBoostBegin,
                 PurpleBooster.LavenderBoostEnd);
+
             PurpleBoosterDashState = self.StateMachine.AddState(
                 new Func<int>(PurpleBooster.PurpleDashingUpdate),
                 PurpleBooster.PurpleDashingCoroutine,
@@ -351,7 +354,6 @@ namespace Celeste.Mod.VortexHelper {
             }
         }
     }
-
 
     public static class StateMachineExt {
         /// <summary>
