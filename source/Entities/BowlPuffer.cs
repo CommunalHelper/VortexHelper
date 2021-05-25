@@ -11,6 +11,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public class BowlPufferCollider : Component {
             public Action<BowlPuffer, Spring> OnCollide;
             public Collider Collider;
+
             public BowlPufferCollider(Action<BowlPuffer, Spring> onCollide, Collider collider = null)
                 : base(active: false, visible: false) {
                 OnCollide = onCollide;
@@ -19,14 +20,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             public void Check(BowlPuffer puffer) {
                 if (OnCollide != null) {
-                    Collider collider = base.Entity.Collider;
+                    Collider collider = Entity.Collider;
                     if (Collider != null) {
-                        base.Entity.Collider = Collider;
+                        Entity.Collider = Collider;
                     }
-                    if (puffer.CollideCheck(base.Entity)) {
-                        OnCollide(puffer, (Spring)base.Entity);
+                    if (puffer.CollideCheck(Entity)) {
+                        OnCollide(puffer, (Spring)Entity);
                     }
-                    base.Entity.Collider = collider;
+                    Entity.Collider = collider;
                 }
             }
         }
@@ -97,8 +98,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
             this.explodeTimer = explodeTimer;
             previousPosition = position;
             startPosition = position;
-            base.Depth = 100;
-            base.Collider = new Hitbox(8f, 10f, -4f, -10f);
+            Depth = Depths.TheoCrystal;
+            Collider = new Hitbox(8f, 10f, -4f, -10f);
 
             Add(pufferBowlBottom = VortexHelperModule.PufferBowlSpriteBank.Create("pufferBowlBottom"));
             Add(puffer = GFX.SpriteBank.Create("pufferFish"));
@@ -132,7 +133,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             scale = Vector2.One;
 
             LiftSpeedGraceTime = 0.1f;
-            base.Tag = Tags.TransitionUpdate;
+            Tag = Tags.TransitionUpdate;
             Add(new MirrorReflection());
         }
 
@@ -152,7 +153,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 if (data.Hit is DashSwitch) {
                     (data.Hit as DashSwitch).OnDashCollide(null, Vector2.UnitX * Math.Sign(Speed.X));
                 }
-                Audio.Play("event:/game/05_mirror_temple/crystaltheo_hit_side", Position);
+                Audio.Play(SFX.game_05_crystaltheo_impact_side, Position);
                 if (Math.Abs(Speed.X) > 100f) {
                     ImpactParticles(data.Direction);
                 }
@@ -167,11 +168,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
                 if (Speed.Y > 0f) {
                     if (hardVerticalHitSoundCooldown <= 0f) {
-                        Audio.Play("event:/game/05_mirror_temple/crystaltheo_hit_ground", Position, "crystal_velocity", Calc.ClampedMap(Speed.Y, 0f, 200f));
+                        Audio.Play(SFX.game_05_crystaltheo_impact_ground, Position, "crystal_velocity", Calc.ClampedMap(Speed.Y, 0f, 200f));
                         hardVerticalHitSoundCooldown = 0.5f;
                     }
                     else {
-                        Audio.Play("event:/game/05_mirror_temple/crystaltheo_hit_ground", Position, "crystal_velocity", 0f);
+                        Audio.Play(SFX.game_05_crystaltheo_impact_ground, Position, "crystal_velocity", 0f);
                     }
                 }
                 if (Speed.Y > 160f) {
@@ -192,22 +193,22 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Vector2 positionRange;
             if (dir.X > 0f) {
                 direction = (float)Math.PI;
-                position = new Vector2(base.Right, base.Y - 4f);
+                position = new Vector2(Right, Y - 4f);
                 positionRange = Vector2.UnitY * 6f;
             }
             else if (dir.X < 0f) {
                 direction = 0f;
-                position = new Vector2(base.Left, base.Y - 4f);
+                position = new Vector2(Left, Y - 4f);
                 positionRange = Vector2.UnitY * 6f;
             }
             else if (dir.Y > 0f) {
                 direction = -(float)Math.PI / 2f;
-                position = new Vector2(base.X, base.Bottom);
+                position = new Vector2(X, Bottom);
                 positionRange = Vector2.UnitX * 6f;
             }
             else {
                 direction = (float)Math.PI / 2f;
-                position = new Vector2(base.X, base.Top);
+                position = new Vector2(X, Top);
                 positionRange = Vector2.UnitX * 6f;
             }
             Level.Particles.Emit(TheoCrystal.P_Impact, 12, position, positionRange, direction);
@@ -244,13 +245,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public void HitSeeker(Seeker seeker) {
             if (!Hold.IsHeld) {
-                Speed = (base.Center - seeker.Center).SafeNormalize(120f);
+                Speed = (Center - seeker.Center).SafeNormalize(120f);
             }
-            Audio.Play("event:/game/05_mirror_temple/crystaltheo_hit_side", Position);
+            Audio.Play(SFX.game_05_crystaltheo_impact_side, Position);
         }
         public void HitSpinner(Entity spinner) {
-            if (!Hold.IsHeld && Speed.Length() < 0.01f && base.LiftSpeed.Length() < 0.01f && (previousPosition - base.ExactPosition).Length() < 0.01f && OnGround()) {
-                int num = Math.Sign(base.X - spinner.X);
+            if (!Hold.IsHeld && Speed.Length() < 0.01f && LiftSpeed.Length() < 0.01f && (previousPosition - ExactPosition).Length() < 0.01f && OnGround()) {
+                int num = Math.Sign(X - spinner.X);
                 if (num == 0) {
                     num = 1;
                 }
@@ -301,9 +302,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private void Explode(bool playsound = true) {
-            base.Collider = pushRadius;
+            Collider = pushRadius;
             if (playsound) {
-                Audio.Play("event:/new_content/game/10_farewell/puffer_splode", Position);
+                Audio.Play(SFX.game_10_puffer_splode, Position);
             }
 
             puffer.Play("explode");
@@ -317,14 +318,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
             DoEntityCustomInteraction();
 
             exploded = false;
-            base.Collider = null;
+            Collider = null;
             Level level = SceneAs<Level>();
             level.Shake();
             level.Displacement.AddBurst(Position, 0.4f, 12f, 36f, 0.5f);
             level.Displacement.AddBurst(Position, 0.4f, 24f, 48f, 0.5f);
             level.Displacement.AddBurst(Position, 0.4f, 36f, 60f, 0.5f);
             for (float num = 0f; num < (float)Math.PI * 2f; num += 0.17453292f) {
-                Vector2 position = base.Center + Calc.AngleToVector(num + Calc.Random.Range(-(float)Math.PI / 90f, (float)Math.PI / 90f), Calc.Random.Range(12, 18));
+                Vector2 position = Center + Calc.AngleToVector(num + Calc.Random.Range(-(float)Math.PI / 90f, (float)Math.PI / 90f), Calc.Random.Range(12, 18));
                 level.Particles.Emit(Seeker.P_Regen, position, num);
             }
         }
@@ -339,19 +340,19 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             // Theo Crystal
             TheoCrystal theoCrystal = CollideFirst<TheoCrystal>();
-            if (theoCrystal != null && !base.Scene.CollideCheck<Solid>(Position, theoCrystal.Center)) {
+            if (theoCrystal != null && !Scene.CollideCheck<Solid>(Position, theoCrystal.Center)) {
                 theoCrystal.ExplodeLaunch(Position);
             }
 
             // Touch Switches
-            foreach (TouchSwitch entity2 in base.Scene.Tracker.GetEntities<TouchSwitch>()) {
+            foreach (TouchSwitch entity2 in Scene.Tracker.GetEntities<TouchSwitch>()) {
                 if (CollideCheck(entity2)) {
                     entity2.TurnOn();
                 }
             }
 
             // Floating Debris
-            foreach (FloatingDebris entity3 in base.Scene.Tracker.GetEntities<FloatingDebris>()) {
+            foreach (FloatingDebris entity3 in Scene.Tracker.GetEntities<FloatingDebris>()) {
                 if (CollideCheck(entity3)) {
                     entity3.OnExplode(Position);
                 }
@@ -404,6 +405,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     continue;
                 }
 
+                // Bubble Wrap Blocks
                 if (e is BubbleWrapBlock) {
                     (e as BubbleWrapBlock).Break();
                     continue;
@@ -449,19 +451,19 @@ namespace Celeste.Mod.VortexHelper.Entities {
             goneTimer = 2.5f;
 
             state = States.Gone;
-            base.Collider = null;
+            Collider = null;
         }
         private void GotoCrystal() {
             SetBowlVisible(true);
             fused = false;
             Add(Hold);
-            base.Collider = new Hitbox(8f, 10f, -4f, -10f);
+            Collider = new Hitbox(8f, 10f, -4f, -10f);
             facing = Facings.Right;
             if (state == States.Gone) {
                 Position = startPosition;
 
                 AllSpritesPlay("recover");
-                Audio.Play("event:/new_content/game/10_farewell/puffer_reform", Position);
+                Audio.Play(SFX.game_10_puffer_reform, Position);
             }
             Speed = prevLiftSpeed = Vector2.Zero;
             if (!CollideCheck<Solid>(Position + Vector2.UnitY)) {
@@ -504,7 +506,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 level.ParticlesFG.Emit(P_Shatter, 1, Center, Vector2.One * 7f, Calc.Random.NextFloat() * (float)Math.PI * 2);
             }
             for (float t = 0f; t < (float)Math.PI * 2f; t += 0.17453292f) {
-                level.Particles.Emit(P_Crystal, base.Center + (Vector2.UnitY * -6), t);
+                level.Particles.Emit(P_Crystal, Center + (Vector2.UnitY * -6), t);
             }
         }
 
@@ -520,7 +522,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (shatterTimer > 0f) {
                 shatterTimer -= 1.5f * Engine.DeltaTime;
             }
-            Player entity = base.Scene.Tracker.GetEntity<Player>();
+            Player entity = Scene.Tracker.GetEntity<Player>();
             if (entity == null) {
                 playerAliveFade = Calc.Approach(playerAliveFade, 0f, 1f * Engine.DeltaTime);
             }
@@ -538,16 +540,16 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         swatTimer -= Engine.DeltaTime;
                     }
                     hardVerticalHitSoundCooldown -= Engine.DeltaTime;
-                    base.Depth = 100;
+                    Depth = Depths.TheoCrystal;
                     if (CollideCheck<Water>() && fused) {
                         fused = false;
-                        Audio.Play("event:/new_content/game/10_farewell/puffer_shrink", Position);
+                        Audio.Play(SFX.game_10_puffer_shrink, Position);
                         puffer.Play("unalert");
                     }
                     if (CollidePufferBarrierCheck() && !fused) {
                         fused = true;
                         explodeTimeLeft = explodeTimer;
-                        Audio.Play("event:/new_content/game/10_farewell/puffer_expand", Position);
+                        Audio.Play(SFX.game_10_puffer_expand, Position);
                         puffer.Play("alert");
                     }
 
@@ -590,10 +592,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         if (OnGround()) {
                             float target = (!OnGround(Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(Position - Vector2.UnitX * 3f) ? 0f : (-20f));
                             Speed.X = Calc.Approach(Speed.X, target, 800f * Engine.DeltaTime);
-                            Vector2 liftSpeed = base.LiftSpeed;
+                            Vector2 liftSpeed = LiftSpeed;
                             if (liftSpeed == Vector2.Zero && prevLiftSpeed != Vector2.Zero) {
                                 Speed = prevLiftSpeed;
                                 prevLiftSpeed = Vector2.Zero;
+
                                 Speed.Y = Math.Min(Speed.Y * 0.6f, 0f);
                                 if (Speed.X != 0f && Speed.Y == 0f) {
                                     Speed.Y = -60f;
@@ -629,36 +632,36 @@ namespace Celeste.Mod.VortexHelper.Entities {
                                 Speed.Y = Calc.Approach(Speed.Y, inWater ? -30f : 200f, num1 * Engine.DeltaTime * (inWater ? 0.7f : 1));
                             }
                         }
-                        previousPosition = base.ExactPosition;
+                        previousPosition = ExactPosition;
                         MoveH(Speed.X * Engine.DeltaTime, onCollideH);
                         MoveV(Speed.Y * Engine.DeltaTime, onCollideV);
-                        if (base.Center.X > Level.Bounds.Right) {
+                        if (Center.X > Level.Bounds.Right) {
                             MoveH(32f * Engine.DeltaTime);
-                            if (base.Left - 8f > Level.Bounds.Right) {
+                            if (Left - 8f > Level.Bounds.Right) {
                                 RemoveSelf();
                             }
                         }
-                        else if (base.Left < Level.Bounds.Left) {
-                            base.Left = Level.Bounds.Left;
+                        else if (Left < Level.Bounds.Left) {
+                            Left = Level.Bounds.Left;
                             Speed.X *= -0.4f;
                         }
-                        else if (base.Top < Level.Bounds.Top - 4) {
-                            base.Top = Level.Bounds.Top + 4;
+                        else if (Top < Level.Bounds.Top - 4) {
+                            Top = Level.Bounds.Top + 4;
                             Speed.Y = 0f;
                         }
-                        else if (base.Top > Level.Bounds.Bottom && !Level.Transitioning) {
+                        else if (Top > Level.Bounds.Bottom && !Level.Transitioning) {
                             MoveV(-5);
                             Explode();
                             GotoGone();
                         }
 
-                        if (base.X < Level.Bounds.Left + 10) {
+                        if (X < Level.Bounds.Left + 10) {
                             MoveH(32f * Engine.DeltaTime);
                         }
                         TempleGate templeGate = CollideFirst<TempleGate>();
                         if (templeGate != null && entity != null) {
                             templeGate.Collidable = false;
-                            MoveH(Math.Sign(entity.X - base.X) * 32 * Engine.DeltaTime);
+                            MoveH(Math.Sign(entity.X - X) * 32 * Engine.DeltaTime);
                             templeGate.Collidable = true;
                         }
                     }
@@ -673,7 +676,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     goneTimer -= Engine.DeltaTime;
                     if (goneTimer <= 0.5f) {
                         if (num > 0.5f && returnCurve.GetLengthParametric(8) > 8f) {
-                            Audio.Play("event:/new_content/game/10_farewell/puffer_return", Position);
+                            Audio.Play(SFX.game_10_puffer_return, Position);
                         }
                         Position = returnCurve.GetPoint(Ease.CubeInOut(Calc.ClampedMap(goneTimer, 0.5f, 0f)));
                     }
