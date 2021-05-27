@@ -1,0 +1,9 @@
+# -- Entity and Trigger Tooltips --
+#    placements.entities.entityName.tooltips.attr=Tooltip
+#    placements.triggers.triggerName.tooltips.attr=Tooltip
+
+
+
+# Bowl Puffer
+placements.entities.VortexHelper/BowlPuffer.tooltips.noRespawn=Whether this Bowl Puffer explodes permanently.
+placements.entities.VortexHelper/BowlPuffer.tooltips.explodeTimer=The time in seconds it takes for this Bowl Puffer to explode after touching a Puffer Barrier. If set to 0, the explosion will immediately occur upon touching the barrier.
