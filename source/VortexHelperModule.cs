@@ -3,7 +3,6 @@ using Celeste.Mod.VortexHelper.Misc;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
-using System.Collections;
 using System.Reflection;
 
 namespace Celeste.Mod.VortexHelper {
@@ -78,7 +77,7 @@ namespace Celeste.Mod.VortexHelper {
         }
 
         private static bool Level_OnLoadEntity(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
-            
+
             // We're doing this because, in the past, we had the lavender booster just be an option rather than
             // a different entity, and now that it's already been published, we can't delete change it, but I thought
             // I'd still make it a different entity. This just converts the old lavender option to the actual lavender booster entity.
@@ -88,7 +87,7 @@ namespace Celeste.Mod.VortexHelper {
             }
 
             return false;
-        }        
+        }
 
         public static Player GetPlayer() {
             try {
@@ -98,38 +97,5 @@ namespace Celeste.Mod.VortexHelper {
                 return null;
             }
         }
-    }
-
-    // Thanks, Ja.
-    // https://github.com/JaThePlayer/FrostHelper/blob/master/FrostTempleHelper/StateMachineExt.cs
-    public static class StateMachineExt {
-        /// <summary>
-        /// Adds a state to a StateMachine
-        /// </summary>
-        /// <returns>The index of the new state</returns>
-        public static int AddState(this StateMachine machine, Func<int> onUpdate, Func<IEnumerator> coroutine = null, Action begin = null, Action end = null) {
-            Action[] begins = (Action[])StateMachine_begins.GetValue(machine);
-            Func<int>[] updates = (Func<int>[])StateMachine_updates.GetValue(machine);
-            Action[] ends = (Action[])StateMachine_ends.GetValue(machine);
-            Func<IEnumerator>[] coroutines = (Func<IEnumerator>[])StateMachine_coroutines.GetValue(machine);
-            int nextIndex = begins.Length;
-            // Now let's expand the arrays
-            Array.Resize(ref begins, begins.Length + 1);
-            Array.Resize(ref updates, begins.Length + 1);
-            Array.Resize(ref ends, begins.Length + 1);
-            Array.Resize(ref coroutines, coroutines.Length + 1);
-            // Store the resized arrays back into the machine
-            StateMachine_begins.SetValue(machine, begins);
-            StateMachine_updates.SetValue(machine, updates);
-            StateMachine_ends.SetValue(machine, ends);
-            StateMachine_coroutines.SetValue(machine, coroutines);
-            // And now we add the new functions
-            machine.SetCallbacks(nextIndex, onUpdate, coroutine, begin, end);
-            return nextIndex;
-        }
-        private static FieldInfo StateMachine_begins = typeof(StateMachine).GetField("begins", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo StateMachine_updates = typeof(StateMachine).GetField("updates", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo StateMachine_ends = typeof(StateMachine).GetField("ends", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo StateMachine_coroutines = typeof(StateMachine).GetField("coroutines", BindingFlags.Instance | BindingFlags.NonPublic);
     }
 }

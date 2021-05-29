@@ -1,5 +1,6 @@
 ﻿using Celeste.Mod.Entities;
 using Celeste.Mod.Meta;
+using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
@@ -153,8 +154,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
             linkVisible = player.StateMachine.State == 2 || player.StateMachine.State == 0;
             linkPercent = linkVisible ? 0.0f : 1.0f;
 
-            if (!linkVisible)
+            if (!linkVisible) {
                 LaunchPlayerParticles(player, -dir, P_BurstExplode);
+            }
 
             while (SceneAs<Level>().Transitioning) {
                 yield return null;
@@ -279,8 +281,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         #region Custom Purple Booster Behavior
+        // TODO: Merge the two states into one. Don't know why I separated them...
 
-        /* Inside the Purple Booster */
+        // Inside the Purple Booster
         public static void PurpleBoostBegin() {
             Player player = VortexHelperModule.GetPlayer();
             player.CurrentBooster = null;
@@ -301,6 +304,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
             player.Drop();
         }
+
         public static int PurpleBoostUpdate() {
             Player player = VortexHelperModule.GetPlayer();
             DynData<Player> playerData = new DynData<Player>(player);
@@ -326,6 +330,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
             return VortexHelperModule.PurpleBoosterState;
         }
+
         public static void PurpleBoostEnd() {
             Player player = VortexHelperModule.GetPlayer();
             Vector2 boostTarget = new DynData<Player>(player).Get<Vector2>("boostTarget");
@@ -333,12 +338,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
             player.MoveToX(vector.X, null);
             player.MoveToY(vector.Y, null);
         }
+
         public static IEnumerator PurpleBoostCoroutine() {
             yield return 0.3f;
             VortexHelperModule.GetPlayer().StateMachine.State = VortexHelperModule.PurpleBoosterDashState;
         }
 
-        /* Arc Motion */
+        // Arc Motion
         public static void PurpleDashingBegin() {
             Player player = VortexHelperModule.GetPlayer();
             DynData<Player> playerData = new DynData<Player>(player);
@@ -355,6 +361,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
             }
         }
+
         public static int PurpleDashingUpdate() {
             if (Input.Dash.Pressed) {
                 Player player = VortexHelperModule.GetPlayer();
@@ -453,7 +460,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             private static void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {
                 orig(self, position, spriteMode);
-                // TODO: Merge the two states into one. Don't know why I separated them...
                 // Custom Purple Booster State
                 VortexHelperModule.PurpleBoosterState = self.StateMachine.AddState(
                     new Func<int>(PurpleBoostUpdate),
