@@ -75,6 +75,7 @@
     <Compile Include="Entities\SwitchBlock.cs" />
     <Compile Include="Entities\VortexBumper.cs" />
     <Compile Include="Entities\VortexSwitchGate.cs" />
+    <Compile Include="Misc\Extensions\PlayerExt.cs" />
     <Compile Include="Misc\Extensions\StateMachineExt.cs" />
     <Compile Include="Misc\MiscHooks.cs" />
     <Compile Include="Misc\Util.cs" />

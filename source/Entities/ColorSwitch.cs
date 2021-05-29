@@ -100,7 +100,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             SetEdgeColor(EdgeColor, EdgeColor);
-            Color col = colors[nextColorIndex] == VortexHelperModule.SessionProperties.switchBlockColor ? defaultBackgroundColor : GetColor(colors[nextColorIndex]);
+            Color col = colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor ? defaultBackgroundColor : GetColor(colors[nextColorIndex]);
             SetBackgroundColor(col, col);
             OnDashCollide = Dashed;
         }
@@ -191,7 +191,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 return DashCollisionResults.NormalCollision;
             }
 
-            if (colors[nextColorIndex] == VortexHelperModule.SessionProperties.switchBlockColor) {
+            if (colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor) {
                 return DashCollisionResults.NormalCollision;
             }
             // no switch, normal collision
@@ -215,16 +215,16 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 nextColorIndex = Calc.Random.Next(0, colors.Length);
             }
 
-            VortexHelperModule.SessionProperties.switchBlockColor = colors[nextColorIndex];
-            Color col = GetColor(VortexHelperModule.SessionProperties.switchBlockColor);
+            VortexHelperModule.SessionProperties.SessionSwitchBlockColor = colors[nextColorIndex];
+            Color col = GetColor(VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
             UpdateColorSwitches(Scene, colors[nextColorIndex]);
             SetEdgeColor(defaultEdgeColor, col);
             actualBackgroundColor = Color.White;
 
             Audio.Play(CustomSFX.game_colorSwitch_hit, base.Center);
-            if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.switchBlockColor)) {
+            if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor)) {
                 Audio.Play(CustomSFX.game_switchBlock_switch,
-                    "tone", GetSoundParam(VortexHelperModule.SessionProperties.switchBlockColor));
+                    "tone", GetSoundParam(VortexHelperModule.SessionProperties.SessionSwitchBlockColor));
             }
 
             (base.Scene as Level).DirectionalShake(direction, 0.25f);
@@ -281,11 +281,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     nextColorIndex = 0;
                 }
 
-                if (colors[nextColorIndex] == VortexHelperModule.SessionProperties.switchBlockColor) {
+                if (colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor) {
                     nextColorIndex++;
                 }
             }
-            BackgroundColor = colors[nextColorIndex] == VortexHelperModule.SessionProperties.switchBlockColor ? defaultBackgroundColor : GetColor(colors[nextColorIndex]);
+            BackgroundColor = colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor ? defaultBackgroundColor : GetColor(colors[nextColorIndex]);
         }
 
         private void SmashParticles(Vector2 dir, ParticleType smashParticle) {

@@ -38,11 +38,11 @@ namespace Celeste.Mod.VortexHelper.Triggers {
 
         public override void OnEnter(Player player) {
             base.OnEnter(player);
-            VortexHelperModule.SessionProperties.switchBlockColor = color;
+            VortexHelperModule.SessionProperties.SessionSwitchBlockColor = color;
             ColorSwitch.UpdateColorSwitches(Scene, color);
-            if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.switchBlockColor) && !silent) {
+            if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor) && !silent) {
                 Audio.Play("event:/vortexHelperEvents/game/switchBlock/switch",
-                    "tone", ColorSwitch.GetSoundParam(VortexHelperModule.SessionProperties.switchBlockColor));
+                    "tone", ColorSwitch.GetSoundParam(VortexHelperModule.SessionProperties.SessionSwitchBlockColor));
             }
 
             if (oneUse) {
