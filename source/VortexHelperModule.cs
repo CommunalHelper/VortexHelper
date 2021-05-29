@@ -52,6 +52,7 @@ namespace Celeste.Mod.VortexHelper {
 
             BowlPuffer.InitializeParticles();
             PurpleBooster.InitializeParticles();
+            LavenderBooster.InitializeParticles();
             VortexBumper.InitializeParticles();
             BubbleWrapBlock.InitializeParticles();
             Lilly.InitializeTextures();
@@ -76,6 +77,10 @@ namespace Celeste.Mod.VortexHelper {
             On.Celeste.FallingBlock.LandParticles += FallingBlock_LandParticles;
 
             On.Celeste.CrushBlock.Update += CrushBlock_Update;
+
+            Everest.Events.Level.OnLoadEntity += Level_OnLoadEntity;
+
+            On.Celeste.Booster.AppearParticles += Booster_AppearParticles;
         }
 
         public override void Unload() {
@@ -97,24 +102,44 @@ namespace Celeste.Mod.VortexHelper {
             On.Celeste.FallingBlock.LandParticles -= FallingBlock_LandParticles;
 
             On.Celeste.CrushBlock.Update -= CrushBlock_Update;
+
+            Everest.Events.Level.OnLoadEntity -= Level_OnLoadEntity;
+
+            On.Celeste.Booster.AppearParticles -= Booster_AppearParticles;
+        }
+
+        // https://github.com/CommunalHelper/CommunalHelper/blob/dev/src/Entities/BoosterStuff/CustomBooster.cs#L113
+        private static void Booster_AppearParticles(On.Celeste.Booster.orig_AppearParticles orig, Booster self) {
+            if (self is LavenderBooster) {
+                ParticleSystem particlesBG = self.SceneAs<Level>().ParticlesBG;
+                for (int i = 0; i < 360; i += 30) {
+                    particlesBG.Emit(PurpleBooster.P_Appear, 1, self.Center, Vector2.One * 2f, i * ((float)Math.PI / 180f));
+                }
+            }
+            else {
+                orig(self);
+            }
+        }
+
+        private static bool Level_OnLoadEntity(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
+            
+            // We're doing this because, in the past, we had the lavender booster just be an option rather than
+            // a different entity, and now that it's already been published, we can't delete change it, but I thought
+            // I'd still make it a different entity. This just converts the old lavender option to the actual lavender booster entity.
+            if (entityData.Name == "VortexHelper/PurpleBooster" && entityData.Bool("lavender")) {
+                entityData.Name = "VortexHelper/LavenderBooster";
+                return Level.LoadCustomEntity(entityData, level);
+            }
+
+            return false;
         }
 
         private void Player_DashEnd(On.Celeste.Player.orig_DashEnd orig, Player self) {
             orig(self);
-            foreach (PurpleBooster b in self.Scene.Tracker.GetEntities<PurpleBooster>()) {
-                if (b.BoostingPlayer) {
-                    b.BoostingPlayer = false;
-                    foreach (PurpleBooster other_booster in self.Scene.Tracker.GetEntities<PurpleBooster>()) {
-                        if (other_booster != b) {
-                            if (self.CollideCheck(other_booster)) {
-                                return;
-                            }
-                        }
-                    }
-                    PurpleBooster.PurpleBoosterExplodeLaunch(self, new DynData<Player>(self), self.Center - self.DashDir, null, -1f);
-                    return;
-                }
-
+            if (self.LastBooster is LavenderBooster booster && booster.BoostingPlayer) {
+                Audio.Play(SFX.game_05_redbooster_end, self.Center);
+                PurpleBooster.LaunchPlayerParticles(self, self.DashDir, LavenderBooster.P_BurstExplodeLavender);
+                PurpleBooster.PurpleBoosterExplodeLaunch(self, new DynData<Player>(self), self.Center - self.DashDir, null, -1f);
             }
         }
 

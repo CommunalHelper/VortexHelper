@@ -67,6 +67,7 @@
     <Compile Include="Entities\ColorSwitch.cs" />
     <Compile Include="Entities\DashBubble.cs" />
     <Compile Include="Entities\FloorBooster.cs" />
+    <Compile Include="Entities\LavenderBooster.cs" />
     <Compile Include="Entities\Lilly.cs" />
     <Compile Include="Entities\PufferBarrier.cs" />
     <Compile Include="Entities\PufferBarrierRenderer.cs" />
