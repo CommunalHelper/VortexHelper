@@ -67,7 +67,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     color = Calc.HexToColor("9cff32");
                     break;
             }
-            Activated = Collidable = SwitchBlockColor == VortexHelperModule.SessionProperties.switchBlockColor;
+            Activated = Collidable = SwitchBlockColor == VortexHelperModule.SessionProperties.SessionSwitchBlockColor;
 
             Add(occluder = new LightOcclude());
         }
