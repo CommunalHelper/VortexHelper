@@ -414,9 +414,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 // Lightning Breaker Boxes
                 if (e is LightningBreakerBox) {
                     if (player != null) {
-                        VortexHelperModule.AllowPlayerDashRefills = false;
+                        float stamina = player.Stamina;
+                        int dashes = player.Dashes;
                         (e as LightningBreakerBox).OnDashCollide(player, Calc.FourWayNormal(e.Center - Center));
-                        VortexHelperModule.AllowPlayerDashRefills = true;
+                        player.Dashes = dashes;
+                        player.Stamina = stamina;
                     }
                     continue;
                 }

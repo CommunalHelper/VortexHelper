@@ -25,8 +25,6 @@ namespace Celeste.Mod.VortexHelper {
         public static MethodInfo Puffer_Explode = typeof(Puffer).GetMethod("Explode", BindingFlags.Instance | BindingFlags.NonPublic);
         public static MethodInfo Puffer_GotoGone = typeof(Puffer).GetMethod("GotoGone", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        public static bool AllowPlayerDashRefills = true;
-
         public override Type SessionType => typeof(VortexHelperSession);
         public static VortexHelperSession SessionProperties => (VortexHelperSession)Instance._Session;
 
