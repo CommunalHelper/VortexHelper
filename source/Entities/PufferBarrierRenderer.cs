@@ -225,5 +225,22 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
             }
         }
+
+        public static class Hooks {
+            public static void Hook() {
+                On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+            }
+
+            public static void Unhook() {
+                On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+            }
+
+            private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
+                orig(self);
+
+                // Allows for PufferBarrier entities to be rendered with just one PufferBarrierRenderer.
+                self.Level.Add(new PufferBarrierRenderer());
+            }
+        }
     }
 }

@@ -278,8 +278,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
             P_BurstExplode.SpeedMax = 250; // felt like good value
         }
 
-
-
         #region Custom Purple Booster Behavior
 
         /* Inside the Purple Booster */
@@ -431,57 +429,44 @@ namespace Celeste.Mod.VortexHelper.Entities {
             player.Speed *= factor;
         }
 
-        public static void LavenderBoostBegin() {
-            Player player = VortexHelperModule.GetPlayer();
-            if ((player.SceneAs<Level>()?.Session.MapData.GetMeta()?.TheoInBubble).GetValueOrDefault()) {
-                player.RefillDash();
-                player.RefillStamina();
-            }
-            else {
-                player.RefillDash();
-                player.RefillStamina();
-                if (player.Holding != null) {
-                    player.Drop();
-                }
-            }
-        }
-
-        public static int LavenderBoostUpdate() {
-            Player player = VortexHelperModule.GetPlayer();
-            Vector2 boostTarget = new DynData<Player>(player).Get<Vector2>("boostTarget");
-
-            Vector2 value = Input.Aim.Value * 3f;
-            Vector2 vector = Calc.Approach(player.ExactPosition, boostTarget - player.Collider.Center + value, 80f * Engine.DeltaTime);
-            player.MoveToX(vector.X);
-            player.MoveToY(vector.Y);
-            if (Input.Dash.Pressed) {
-                Input.Dash.ConsumePress();
-                return 2;
-            }
-            return VortexHelperModule.LavenderBoosterState;
-        }
-
-        public static IEnumerator LavenderBoostCoroutine() {
-            yield return 0.25f;
-            VortexHelperModule.GetPlayer().StateMachine.State = 2;
-        }
-
-        public static void LavenderBoostEnd() {
-            Player player = VortexHelperModule.GetPlayer();
-            Vector2 vector = (new DynData<Player>(player).Get<Vector2>("boostTarget") - player.Collider.Center).Floor();
-            player.MoveToX(vector.X);
-            player.MoveToY(vector.Y);
-            foreach (PurpleBooster b in player.Scene.Tracker.GetEntities<PurpleBooster>()) {
-                if (b.StartedBoosting) {
-                    b.PlayerBoosted(player, player.DashDir);
-                    return;
-                }
-                if (b.BoostingPlayer) {
-                    return;
-                }
-            }
-        }
-
         #endregion
+
+        public static class Hooks {
+            public static void Hook() {
+                On.Celeste.Player.DashBegin += Player_DashBegin;
+                On.Celeste.Player.ctor += Player_ctor;
+            }
+
+            public static void Unhook() {
+                On.Celeste.Player.DashBegin -= Player_DashBegin;
+                On.Celeste.Player.ctor -= Player_ctor;
+            }
+
+            private static void Player_DashBegin(On.Celeste.Player.orig_DashBegin orig, Player self) {
+                orig(self);
+                DynData<Player> playerData = new DynData<Player>(self);
+                if (playerData.Get<bool>("purpleBoosterEarlyExit")) {
+                    --self.Dashes;
+                    playerData.Set("purpleBoosterEarlyExit", false);
+                }
+            }
+
+            private static void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {
+                orig(self, position, spriteMode);
+                // TODO: Merge the two states into one. Don't know why I separated them...
+                // Custom Purple Booster State
+                VortexHelperModule.PurpleBoosterState = self.StateMachine.AddState(
+                    new Func<int>(PurpleBoostUpdate),
+                    PurpleBoostCoroutine,
+                    PurpleBoostBegin,
+                    PurpleBoostEnd);
+
+                // Custom Purple Booster State (Arc Motion)
+                VortexHelperModule.PurpleBoosterDashState = self.StateMachine.AddState(
+                    new Func<int>(PurpleDashingUpdate),
+                    PurpleDashingCoroutine,
+                    PurpleDashingBegin);
+            }
+        }
     }
 }

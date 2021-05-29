@@ -75,6 +75,7 @@
     <Compile Include="Entities\SwitchBlock.cs" />
     <Compile Include="Entities\VortexBumper.cs" />
     <Compile Include="Entities\VortexSwitchGate.cs" />
+    <Compile Include="Misc\MiscHooks.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Triggers\ColorSwitchTrigger.cs" />
     <Compile Include="Triggers\KillLightningTrigger.cs" />

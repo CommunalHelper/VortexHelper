@@ -1,6 +1,10 @@
 ﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
+using MonoMod.Utils;
+using System;
 using System.Collections.Generic;
 
 namespace Celeste.Mod.VortexHelper.Entities {
@@ -196,6 +200,128 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 idleSfx.Position.Y += 7;
                 activateSfx.Position = idleSfx.Position;
                 idleSfx.UpdateSfxPosition(); activateSfx.UpdateSfxPosition();
+            }
+        }
+
+        public static class Hooks {
+            public static void Hook() {
+                IL.Celeste.Player.NormalUpdate += Player_FrictionNormalUpdate;
+                On.Celeste.Player.NormalUpdate += Player_NormalUpdate;
+                On.Celeste.Player.NormalBegin += Player_NormalBegin;
+                On.Celeste.Player.RefillDash += Player_RefillDash;
+            }
+
+            public static void Unhook() {
+                IL.Celeste.Player.NormalUpdate -= Player_FrictionNormalUpdate;
+                On.Celeste.Player.NormalUpdate -= Player_NormalUpdate;
+                On.Celeste.Player.NormalBegin -= Player_NormalBegin;
+                On.Celeste.Player.RefillDash -= Player_RefillDash;
+            }
+
+            private static bool Player_RefillDash(On.Celeste.Player.orig_RefillDash orig, Player self) {
+                // Fix crashes with vanilla entities that refill the dash.
+                if (self.Scene == null || self.Dead) {
+                    return false;
+                }
+
+                foreach (FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>()) {
+                    if (!entity.IceMode) {
+                        continue;
+                    }
+
+                    if (self.CollideCheck(entity) && self.OnGround()
+                        && self.Bottom <= entity.Bottom && entity.NoRefillsOnIce) {
+                        return false;
+                    }
+                }
+                return orig(self);
+            }
+
+            private static void Player_NormalBegin(On.Celeste.Player.orig_NormalBegin orig, Player self) {
+                orig(self);
+                DynData<Player> playerData = new DynData<Player>(self);
+                playerData.Set("floorBoosterSpeed", 0f);
+                playerData.Set<FloorBooster>("lastFloorBooster", null);
+                playerData.Set("purpleBoosterEarlyExit", false);
+            }
+
+            private static int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self) {
+                DynData<Player> playerData = new DynData<Player>(self);
+
+                // thanks max480 for the bug report.
+                if (!playerData.Data.ContainsKey("lastFloorBooster")) {
+                    playerData.Set<FloorBooster>("lastFloorBooster", null);
+                }
+
+                FloorBooster lastFloorBooster = playerData.Get<FloorBooster>("lastFloorBooster");
+
+                if (lastFloorBooster != null && !self.CollideCheck(lastFloorBooster)) {
+                    Vector2 vec = Vector2.UnitX
+                        * playerData.Get<float>("floorBoosterSpeed")
+                        * (lastFloorBooster.Facing == Facings.Right ? lastFloorBooster.MoveSpeed : -lastFloorBooster.MoveSpeed);
+
+                    if (self.OnGround()) {
+                        self.LiftSpeed += vec / 1.6f;
+                    }
+                    self.Speed += vec / 1.6f;
+                    playerData.Set<FloorBooster>("lastFloorBooster", null);
+                }
+                bool touchedFloorBooster = false;
+                float floorBoosterSpeed = 0f;
+                foreach (FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>()) {
+                    if (entity.IceMode) {
+                        continue;
+                    }
+
+                    if (self.CollideCheck(entity) && self.OnGround() && self.StateMachine != 1 && self.Bottom <= entity.Bottom) {
+                        if (!touchedFloorBooster) {
+                            floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 1f, 4f * Engine.DeltaTime);
+                            touchedFloorBooster = true;
+                        }
+
+                        float x = entity.Facing == Facings.Right ? entity.MoveSpeed : -entity.MoveSpeed;
+                        self.MoveH(x * floorBoosterSpeed * Engine.DeltaTime);
+
+                        playerData.Set("lastFloorBooster", entity);
+                    }
+                }
+                if (!touchedFloorBooster) {
+                    floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 0f, 4f * Engine.DeltaTime);
+                }
+
+                playerData.Set("floorBoosterSpeed", floorBoosterSpeed);
+
+                return orig(self);
+            }
+
+            // Thanks Extended Variants
+            // https://github.com/max4805/Everest-ExtendedVariants/blob/master/ExtendedVariantMode/Variants/Friction.cs#L54
+            private static void Player_FrictionNormalUpdate(ILContext il) {
+                ILCursor cursor = new ILCursor(il);
+
+                if (cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdcR4(0.65f))
+                    && cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdcR4(1f))) {
+                    cursor.EmitDelegate<Func<float>>(GetPlayerFriction);
+                    cursor.Emit(OpCodes.Mul);
+                }
+            }
+
+            private static float GetPlayerFriction() {
+                Player player = VortexHelperModule.GetPlayer();
+                if (player != null) {
+                    foreach (FloorBooster entity in player.Scene.Tracker.GetEntities<FloorBooster>()) {
+                        if (!entity.IceMode) {
+                            continue;
+                        }
+
+                        if (player.CollideCheck(entity) && player.OnGround() && player.StateMachine != 1
+                            && player.Bottom <= entity.Bottom) {
+                            return player.SceneAs<Level>().CoreMode == Session.CoreModes.Cold ? 0.4f : 0.2f;
+                        }
+                    }
+                }
+
+                return 1f;
             }
         }
     }

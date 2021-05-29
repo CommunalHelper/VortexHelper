@@ -732,5 +732,50 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Acceleration = Vector2.UnitY * 30
             };
         }
+
+        public static class Hooks {
+            public static void Hook() {
+                On.Celeste.Spring.ctor_Vector2_Orientations_bool += Spring_orig;
+                On.Celeste.Puffer.Update += Puffer_Update;
+            }
+
+            public static void Unhook() {
+                On.Celeste.Spring.ctor_Vector2_Orientations_bool -= Spring_orig;
+                On.Celeste.Puffer.Update -= Puffer_Update;
+            }
+
+            private static void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self) {
+                orig(self);
+                if (!self.Collidable) {
+                    return;
+                }
+
+                foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>()) {
+                    barrier.Collidable = true;
+                }
+
+                PufferBarrier collided = self.CollideFirst<PufferBarrier>();
+                if (collided != null) {
+                    collided.OnTouchPuffer();
+
+                    VortexHelperModule.Puffer_Explode.Invoke(self, new object[] { });
+                    VortexHelperModule.Puffer_GotoGone.Invoke(self, new object[] { });
+                }
+
+                foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>()) {
+                    barrier.Collidable = false;
+                }
+            }
+
+            private static void Spring_orig(On.Celeste.Spring.orig_ctor_Vector2_Orientations_bool orig, Spring self, Vector2 position, Spring.Orientations orientation, bool playerCanUse) {
+                orig(self, position, orientation, playerCanUse);
+                self.Add(new BowlPuffer.BowlPufferCollider(Spring_OnBowlPuffer));
+            }
+
+            private static void Spring_OnBowlPuffer(BowlPuffer puffer, Spring self) {
+                puffer.HitSpring(self);
+                VortexHelperModule.Spring_BounceAnimate.Invoke(self, new object[] { });
+            }
+        }
     }
 }
