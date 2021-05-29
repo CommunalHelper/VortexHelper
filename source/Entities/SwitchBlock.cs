@@ -295,7 +295,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public override void Update() {
             base.Update();
-            Activated = SwitchBlockColor == VortexHelperModule.SessionProperties.switchBlockColor;
+            Activated = SwitchBlockColor == VortexHelperModule.SessionProperties.SessionSwitchBlockColor;
 
             if (groupLeader && Activated && !Collidable) {
                 bool isPlayerSafe = CheckPlayerSafe();
