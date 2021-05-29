@@ -1,9 +1,22 @@
-# -- Entity and Trigger Tooltips --
+﻿# -- Entity and Trigger Tooltips --
 #    placements.entities.entityName.tooltips.attr=Tooltip
 #    placements.triggers.triggerName.tooltips.attr=Tooltip
 
+# custom switch gate
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.behavior=Which custom behavior the block should use once activated.\n- Crush: The block accelerates toward its node like an Intro Crusher.\n- Shatter: The block destroys itself on the spot.
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.crushDuration=The length of time the block takes to reach its node in Crush mode, in seconds.
 
+# floor booster
+placements.entities.VortexHelper/FloorBooster.tooltips.iceMode=Whether the Floor Booster should ignore the current Core mode and default to ice variant.
+placements.entities.VortexHelper/FloorBooster.tooltips.noRefillOnIce=Whether the ice variant should prevent dash refills when stood on.
+placements.entities.VortexHelper/FloorBooster.tooltips.notAttached=If ticked, the Floor Booster will forcibly not attach to moving platforms.
+
+# color switch
+placements.entities.VortexHelper/ColorSwitch.tooltips.random=If ticked, the switch will change to a random color after being hit, rather than cycling through the colors.
+
+# purple booster
+placements.entities.VortexHelper/PurpleBooster.tooltips.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
 
 # Bowl Puffer
-placements.entities.VortexHelper/BowlPuffer.tooltips.noRespawn=Whether this Bowl Puffer explodes permanently.
-placements.entities.VortexHelper/BowlPuffer.tooltips.explodeTimer=The time in seconds it takes for this Bowl Puffer to explode after touching a Puffer Barrier. If set to 0, the explosion will immediately occur upon touching the barrier.
+placements.entities.VortexHelper/BowlPuffer.tooltips.noRespawn=If ticked, the pufferfish will not respawn after it explodes until the room is reset.
+placements.entities.VortexHelper/BowlPuffer.tooltips.explodeTimer=The time, in seconds, before the pufferfish will explode after touching a Puffer Barrier. Set to 0 for an instant explosion.
