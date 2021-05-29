@@ -88,14 +88,5 @@ namespace Celeste.Mod.VortexHelper {
 
             return false;
         }
-
-        public static Player GetPlayer() {
-            try {
-                return (Engine.Scene as Level).Tracker.GetEntity<Player>();
-            }
-            catch (NullReferenceException) {
-                return null;
-            }
-        }
     }
 }

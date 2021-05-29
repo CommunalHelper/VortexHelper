@@ -1,5 +1,6 @@
 ﻿using Celeste.Mod.Entities;
 using Celeste.Mod.Meta;
+using Celeste.Mod.VortexHelper.Misc;
 using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -110,7 +111,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public static void Boost(Player player, PurpleBooster booster) {
             player.StateMachine.State = VortexHelperModule.PurpleBoosterState;
             player.Speed = Vector2.Zero;
-            DynData<Player> playerData = new DynData<Player>(player);
+            DynData<Player> playerData = player.GetData();
             playerData.Set("boostTarget", booster.Center);
             booster.StartedBoosting = true;
         }
@@ -285,7 +286,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         // Inside the Purple Booster
         public static void PurpleBoostBegin() {
-            Player player = VortexHelperModule.GetPlayer();
+            Util.TryGetPlayer(out Player player);
             player.CurrentBooster = null;
             Level level = player.SceneAs<Level>();
             bool? flag;
@@ -306,8 +307,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         public static int PurpleBoostUpdate() {
-            Player player = VortexHelperModule.GetPlayer();
-            DynData<Player> playerData = new DynData<Player>(player);
+            Util.TryGetPlayer(out Player player);
+            DynData<Player> playerData = player.GetData();
             Vector2 boostTarget = playerData.Get<Vector2>("boostTarget");
             Vector2 value = Input.Aim.Value * 3f;
             Vector2 vector = Calc.Approach(player.ExactPosition, boostTarget - player.Collider.Center + value, 80f * Engine.DeltaTime);
@@ -332,8 +333,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         public static void PurpleBoostEnd() {
-            Player player = VortexHelperModule.GetPlayer();
-            Vector2 boostTarget = new DynData<Player>(player).Get<Vector2>("boostTarget");
+            Util.TryGetPlayer(out Player player);
+            Vector2 boostTarget = player.GetData().Get<Vector2>("boostTarget");
             Vector2 vector = (boostTarget - player.Collider.Center).Floor();
             player.MoveToX(vector.X, null);
             player.MoveToY(vector.Y, null);
@@ -341,13 +342,15 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public static IEnumerator PurpleBoostCoroutine() {
             yield return 0.3f;
-            VortexHelperModule.GetPlayer().StateMachine.State = VortexHelperModule.PurpleBoosterDashState;
+
+            Util.TryGetPlayer(out Player player);
+            player.StateMachine.State = VortexHelperModule.PurpleBoosterDashState;
         }
 
         // Arc Motion
         public static void PurpleDashingBegin() {
-            Player player = VortexHelperModule.GetPlayer();
-            DynData<Player> playerData = new DynData<Player>(player);
+            Util.TryGetPlayer(out Player player);
+            DynData<Player> playerData = player.GetData();
             player.DashDir = Input.LastAim.EightWayNormal();
             playerData.Set("purpleBoostPossibleEarlyDashSpeed", Vector2.Zero);
 
@@ -364,8 +367,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public static int PurpleDashingUpdate() {
             if (Input.Dash.Pressed) {
-                Player player = VortexHelperModule.GetPlayer();
-                DynData<Player> playerData = new DynData<Player>(player);
+                Util.TryGetPlayer(out Player player);
+                DynData<Player> playerData = player.GetData();
 
                 playerData.Set("purpleBoosterEarlyExit", true);
                 player.LiftSpeed += playerData.Get<Vector2>("purpleBoostPossibleEarlyDashSpeed");
@@ -378,8 +381,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public static IEnumerator PurpleDashingCoroutine() {
             float t = 0f;
-            Player player = VortexHelperModule.GetPlayer();
-            DynData<Player> playerData = new DynData<Player>(player);
+            Util.TryGetPlayer(out Player player);
+            DynData<Player> playerData = player.GetData();
             Vector2 origin = playerData.Get<Vector2>("boostTarget");
 
             Vector2 earlyExitBoost;
@@ -451,7 +454,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             private static void Player_DashBegin(On.Celeste.Player.orig_DashBegin orig, Player self) {
                 orig(self);
-                DynData<Player> playerData = new DynData<Player>(self);
+                DynData<Player> playerData = self.GetData();
                 if (playerData.Get<bool>("purpleBoosterEarlyExit")) {
                     --self.Dashes;
                     playerData.Set("purpleBoosterEarlyExit", false);

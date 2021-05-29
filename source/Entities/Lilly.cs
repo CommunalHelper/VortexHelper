@@ -1,4 +1,5 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
@@ -288,7 +289,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             colorLerp = Calc.Approach(colorLerp, 1f, Engine.DeltaTime * 3f);
             face.Color = Color.Lerp(colorFrom, colorTo, colorLerp);
 
-            Player player = VortexHelperModule.GetPlayer();
+            Util.TryGetPlayer(out Player player);
             if (player == null && WasUsedOnce) {
                 faceState = FaceState.Horrified;
                 face.Play("horrified");

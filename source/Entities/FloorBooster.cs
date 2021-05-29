@@ -1,4 +1,6 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc;
+using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -239,14 +241,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             private static void Player_NormalBegin(On.Celeste.Player.orig_NormalBegin orig, Player self) {
                 orig(self);
-                DynData<Player> playerData = new DynData<Player>(self);
+                DynData<Player> playerData = self.GetData();
                 playerData.Set("floorBoosterSpeed", 0f);
                 playerData.Set<FloorBooster>("lastFloorBooster", null);
                 playerData.Set("purpleBoosterEarlyExit", false);
             }
 
             private static int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self) {
-                DynData<Player> playerData = new DynData<Player>(self);
+                DynData<Player> playerData = self.GetData();
 
                 // thanks max480 for the bug report.
                 if (!playerData.Data.ContainsKey("lastFloorBooster")) {
@@ -307,7 +309,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             private static float GetPlayerFriction() {
-                Player player = VortexHelperModule.GetPlayer();
+                Util.TryGetPlayer(out Player player);
                 if (player != null) {
                     foreach (FloorBooster entity in player.Scene.Tracker.GetEntities<FloorBooster>()) {
                         if (!entity.IceMode) {
