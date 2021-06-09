@@ -42,15 +42,16 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public FloorBooster(Vector2 position, int width, bool left, int speed, bool iceMode, bool noRefillOnIce, bool notAttached)
             : base(position) {
-            base.Tag = Tags.TransitionUpdate;
-            base.Depth = 1999;
+            Tag = Tags.TransitionUpdate;
+            Depth = Depths.Below - 1;
+
             NoRefillsOnIce = noRefillOnIce;
             notCoreMode = iceMode;
             IceMode = iceMode;
             MoveSpeed = (int)Calc.Max(0, speed);
             Facing = left ? Facings.Left : Facings.Right;
 
-            base.Collider = new Hitbox(width, 3, 0, 5);
+            Collider = new Hitbox(width, 3, 0, 5);
             if (!notCoreMode) {
                 Add(new CoreModeListener(OnChangeMode));
             }
@@ -58,7 +59,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Add(idleSfx = new SoundSource());
             Add(activateSfx = new SoundSource());
 
-            if (!notAttached) // sure why not i guess
+            if (!notAttached)
             {
                 Add(new StaticMover {
                     OnShake = OnShake,
@@ -73,9 +74,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         public void SetColor(Color color) {
-            foreach (Component component in base.Components) {
-                Image image = component as Image;
-                if (image != null) {
+            foreach (Component component in Components) {
+                if (component is Image image) {
                     image.Color = color;
                 }
             }
@@ -104,11 +104,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private List<Sprite> BuildSprite(bool left) {
             List<Sprite> list = new List<Sprite>();
-            for (int i = 0; i < base.Width; i += 8) {
+            for (int i = 0; i < Width; i += 8) {
+
                 // Sprite Selection
                 string id =
                     (i == 0) ? (!left ? "Left" : "Right") :
-                    ((!((i + 16) > base.Width)) ? "Mid" :
+                    ((!((i + 16) > Width)) ? "Mid" :
                     (!left ? "Right" : "Left"));
 
                 Sprite sprite = VortexHelperModule.FloorBoosterSpriteBank.Create("FloorBooster" + id);
@@ -128,10 +129,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
             tiles.ForEach(delegate (Sprite t) {
                 t.Play(IceMode ? "ice" : "hot");
             });
+
             if (IceMode) {
                 idleSfx.Stop();
-            }
-            else if (!idleSfx.Playing) {
+            } else if (!idleSfx.Playing) {
                 idleSfx.Play("event:/env/local/09_core/conveyor_idle");
             }
         }
@@ -139,6 +140,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private bool IsRiding(JumpThru jumpThru) {
             return CollideCheckOutside(jumpThru, Position + Vector2.UnitY);
         }
+
         private bool IsRiding(Solid solid) {
             if (CollideCheckOutside(solid, Position + Vector2.UnitY)) {
                 disableMode = (solid is CassetteBlock || solid is SwitchBlock) ? DisableMode.ColorFade : DisableMode.Disappear;
@@ -146,6 +148,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
             return false;
         }
+
         private void OnShake(Vector2 amount) {
             imageOffset += amount;
         }
@@ -161,9 +164,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         public override void Update() {
-            Player player = base.Scene.Tracker.GetEntity<Player>();
+            Player player = Scene.Tracker.GetEntity<Player>();
             PositionSfx(player);
-            if (!(base.Scene as Level).Transitioning) {
+            if (!SceneAs<Level>().Transitioning) {
                 bool isUsed = false;
                 base.Update();
                 if (player != null) {

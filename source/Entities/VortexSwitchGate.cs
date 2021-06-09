@@ -41,6 +41,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             this.node = node;
             this.persistent = persistent;
             this.crushSpeed = Calc.Min(Calc.Max(crushSpeed, 0.5f), 2f); // 0.5 < crushSpeed < 2 so the sound doesn't get messed up.
+            
             switch (behavior) {
                 default:
                 case "crush":
@@ -67,12 +68,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     break;
             }
 
-            Add(icon = new Sprite(GFX.Game, "objects/switchgate/icon"));
+            Add(icon = new Sprite(GFX.Game, "objects/switchgate/icon") {
+                Rate = 0f,
+                Color = inactiveColor,
+                Position = iconOffset = new Vector2(width / 2f, height / 2f)
+            });
+
             icon.Add("spin", "", 0.1f, "spin");
             icon.Play("spin");
-            icon.Rate = 0f;
-            icon.Color = inactiveColor;
-            icon.Position = (iconOffset = new Vector2(width / 2f, height / 2f));
             icon.CenterOrigin();
 
             Add(wiggler = Wiggler.Create(0.5f, 4f, delegate (float f) {
@@ -94,37 +97,35 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public override void Awake(Scene scene) {
             base.Awake(scene);
             if (Switch.CheckLevelFlag(SceneAs<Level>())) {
+
                 if (behavior == SwitchGateBehavior.Crush) {
                     MoveTo(node);
                     icon.Rate = 0f;
                     icon.SetAnimationFrame(0);
                     icon.Color = finishColor;
-                }
-                else {
-                    RemoveSelf(); // you were already dead af >:)
-                }
-            }
-            else {
-                if (behavior == SwitchGateBehavior.Crush) {
+                } else
+                    RemoveSelf();
+
+            } else {
+                if (behavior == SwitchGateBehavior.Crush)
                     Add(new Coroutine(CrushSequence(node)));
-                }
-                else {
+                else
                     Add(new Coroutine(ShatterSequence()));
-                }
+                
             }
         }
 
         public override void Render() {
-            float num = base.Collider.Width / 8f - 1f;
-            float num2 = base.Collider.Height / 8f - 1f;
+            float num = Collider.Width / 8f - 1f;
+            float num2 = Collider.Height / 8f - 1f;
             for (int i = 0; i <= num; i++) {
                 for (int j = 0; j <= num2; j++) {
                     int num3 = (i < num) ? Math.Min(i, 1) : 2;
                     int num4 = (j < num2) ? Math.Min(j, 1) : 2;
-                    nineSlice[num3, num4].Draw(Position + base.Shake + new Vector2(i * 8, j * 8));
+                    nineSlice[num3, num4].Draw(Position + Shake + new Vector2(i * 8, j * 8));
                 }
             }
-            icon.Position = iconOffset + base.Shake;
+            icon.Position = iconOffset + Shake;
             icon.DrawOutline();
             base.Render();
         }
@@ -156,18 +157,19 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             openSfx.Stop();
-            Audio.Play("event:/game/general/wall_break_stone", base.Center);
-            Audio.Play("event:/game/general/touchswitch_gate_finish", base.Center);
+            Audio.Play("event:/game/general/wall_break_stone", Center);
+            Audio.Play("event:/game/general/touchswitch_gate_finish", Center);
             level.Shake();
 
-            for (int i = 0; i < base.Width / 8f; i++) {
-                for (int j = 0; j < base.Height / 8f; j++) {
-                    Debris debris = new Debris().orig_Init(Position + new Vector2(4 + i * 8, 4 + j * 8), '1').BlastFrom(base.Center);
+            for (int i = 0; i < Width / 8f; i++) {
+                for (int j = 0; j < Height / 8f; j++) {
+                    Debris debris = new Debris().orig_Init(Position + new Vector2(4 + i * 8, 4 + j * 8), '1').BlastFrom(Center);
                     DynData<Debris> debrisData = new DynData<Debris>(debris);
                     debrisData.Get<Image>("image").Texture = GFX.Game[debrisPath];
-                    base.Scene.Add(debris);
+                    Scene.Add(debris);
                 }
             }
+
             DestroyStaticMovers();
             RemoveSelf();
         }
@@ -175,21 +177,27 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private IEnumerator CrushSequence(Vector2 node) {
             Level level = SceneAs<Level>();
             Vector2 start = Position;
+
             while (!Switch.Check(Scene)) {
                 yield return null;
             }
+
             if (persistent) {
                 Switch.SetLevelFlag(level);
             }
+
             yield return 0.1f;
             StartShaking(0.5f);
             openSfx.Play("event:/game/general/touchswitch_gate_open");
+
             while (icon.Rate < 1f) {
                 icon.Color = Color.Lerp(inactiveColor, activeColor, icon.Rate);
                 icon.Rate += Engine.DeltaTime * 2f;
                 yield return null;
             }
+
             yield return 0.1f;
+
             int particleAt = 0;
             Tween tween = Tween.Create(Tween.TweenMode.Oneshot, Ease.CubeIn, crushSpeed, start: true);
             tween.OnUpdate = delegate (Tween t) {
@@ -207,9 +215,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
             };
             Add(tween);
+
             yield return crushSpeed;
+
             bool collidable = Collidable;
             Collidable = false;
+
+            // Particles
             if (node.X <= start.X) {
                 Vector2 value = new Vector2(0f, 2f);
                 for (int i = 0; i < Height / 8f; i++) {
@@ -260,6 +272,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             openSfx.Stop();
             StartShaking(0.2f);
             level.Shake();
+
             while (icon.Rate > 0f) {
                 icon.Color = Color.Lerp(activeColor, finishColor, 1f - icon.Rate);
                 icon.Rate -= Engine.DeltaTime * 4f;
@@ -268,7 +281,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
             icon.Rate = 0f;
             icon.SetAnimationFrame(0);
             wiggler.Start();
-            bool collidable2 = Collidable;
+
+            collidable = Collidable;
             Collidable = false;
             if (!Scene.CollideCheck<Solid>(Center)) {
                 for (int m = 0; m < 32; m++) {
@@ -276,7 +290,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     SceneAs<Level>().ParticlesFG.Emit(TouchSwitch.P_Fire, Position + iconOffset + Calc.AngleToVector(num, 4f), num);
                 }
             }
-            Collidable = collidable2;
+            Collidable = collidable;
         }
     }
 }

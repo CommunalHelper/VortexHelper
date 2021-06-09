@@ -10,6 +10,7 @@ using VortexHelper;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/Lilly")]
     class Lilly : Solid {
+
         private class LillyArmEnd : Solid {
             public Vector2 startPosition;
             public float Distance => Position.X - startPosition.X;
@@ -80,10 +81,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private float rightLength, leftLength;
 
         /*
-         * 4D array let's gooo [i, j, k, l]
-         * i & j ---> x and y tile position in texture
-         * k     ---> frame of the texture, between 0 and 1
-         * l     ---> state of the texture (0 = 'block', 1 = 'active_block')
+         * 4D array :
+         * i & j ---> x and y tile position in texture.
+         * k     ---> frame of the texture, between 0 and 1.
+         * l     ---> state of the texture (0 = 'block', 1 = 'active_block').
          */
         private static readonly MTexture[,,,] blockTextures = new MTexture[3, 4, 2, 2];
         private static readonly MTexture[] armEndTextures = new MTexture[4];
@@ -143,9 +144,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
             faceState = FaceState.Dash;
             face.Play("dashed", true);
             ChangeColor(DashColor);
-            StartShaking(.375f);
+            StartShaking(0.375f);
             Audio.Play(CustomSFX.game_lilly_dashed, Center);
-            yield return .5f;
+            yield return 0.5f;
 
             // Arms extend.
             rightLength = leftLength = 0f;
@@ -161,6 +162,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             LillyArm rightArm = new LillyArm(new Vector2(X + Width, Y), rightArmEnd, (int)(X + Width), 6);
             LillyArm leftArm = new LillyArm(new Vector2(X + 6, Y), leftArmEnd, (int)X, 0);
             AddArm(rightArmEnd, rightArm); AddArm(leftArmEnd, leftArm);
+
             bool rightArmExtended = false, leftArmExtended = false;
             while (!rightArmExtended || !leftArmExtended) {
                 Collidable = false;
@@ -182,6 +184,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
                     }
                 }
+
                 if (!leftArmExtended) {
                     float moveAmount = leftArmEnd.X;
                     float move = (leftArmExtended = (leftArmEnd.X - ArmSpeed * Engine.DeltaTime < leftArmEnd.startPosition.X - maxLength)) ?
@@ -200,6 +203,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
                     }
                 }
+
                 rightLength = rightArmEnd.Distance;
                 leftLength = leftArmEnd.Distance;
                 Collidable = true;
@@ -220,34 +224,41 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 retractFactor = Calc.Approach(retractFactor, 1f, Engine.DeltaTime * 3f);
                 float retractSpeed = ArmSpeedRetract * retractFactor;
                 bool scrapeParticles = level.OnInterval(.3f);
+
                 if (rightArmExtended) {
                     float newX = rightArmEnd.X - retractSpeed * Engine.DeltaTime;
                     bool finished = false;
+
                     if (newX < rightArmEnd.startPosition.X) {
                         finished = true;
                         newX = rightArmEnd.startPosition.X;
                         StartShaking(0.1f);
                         Audio.Play(CustomSFX.game_lilly_arm_impact, Center, "retract", 1f);
                     }
+
                     float move = newX - rightArmEnd.X;
                     rightArmEnd.MoveH(move);
                     rightArm.UpdateArm(move);
                     rightArmExtended = !finished;
                 }
+
                 if (leftArmExtended) {
                     float newX = leftArmEnd.X + retractSpeed * Engine.DeltaTime;
                     bool finished = false;
+
                     if (newX > leftArmEnd.startPosition.X) {
                         finished = true;
                         newX = leftArmEnd.startPosition.X;
                         StartShaking(0.1f);
                         Audio.Play(CustomSFX.game_lilly_arm_impact, Center, "retract", 1f);
                     }
+
                     float move = newX - leftArmEnd.X;
                     leftArmEnd.MoveH(move);
                     leftArm.UpdateArm(move);
                     leftArmExtended = !finished;
                 }
+
                 rightLength = rightArmEnd.Distance;
                 leftLength = leftArmEnd.Distance;
                 yield return null;
@@ -263,7 +274,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             armsExtended = false;
             RemoveArms(rightArmEnd, rightArm);
             RemoveArms(leftArmEnd, leftArm);
-            yield return .25f;
+            yield return 0.25f;
         }
 
         private void AddArm(LillyArmEnd armEnd, LillyArm arm) {
@@ -378,22 +389,23 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
             }
 
-            int h = (int)(Height / 8);
             Vector2 renderOffset = Vector2.One * 4;
+
+            int h = (int)(Height / 8);
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < h; j++) {
                     int ty = (j == 0 ? 0 : (j == h - 1 ? 3 : (j == h - 2 ? 2 : 1)));
                     MTexture tile = blockTextures[i, ty, frame, armsExtended ? 1 : 0];
 
-
                     Vector2 p = Position + new Vector2(i * 8, j * 8);
-                    Vector2 newPos = base.Center + ((p - base.Center) * scale) + base.Shake;
+                    Vector2 newPos = Center + ((p - Center) * scale) + Shake;
 
                     tile.DrawCentered(newPos + renderOffset, Color.White, scale);
                 }
             }
 
             base.Render();
+
             if (armsExtended) {
                 for (int j = 0; j < h; j++) {
                     int ty = (j == 0 ? 0 : (j == h - 1 ? 3 : (j == h - 2 ? 2 : 1)));
@@ -403,6 +415,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     armEnd.Draw(leftArmPos + yOffset, Vector2.Zero, Color.White, new Vector2(-1, 1));
                 }
             }
+
             Position = pos;
         }
 

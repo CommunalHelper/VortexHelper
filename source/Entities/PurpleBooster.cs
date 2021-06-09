@@ -44,11 +44,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public PurpleBooster(Vector2 position)
             : base(position) {
 
-            base.Depth = -8500;
-            base.Collider = new Circle(10f, 0f, 2f);
+            Depth = Depths.Above;
+            Collider = new Circle(10f, 0f, 2f);
 
             sprite = VortexHelperModule.PurpleBoosterSpriteBank.Create("purpleBooster");
-
             Add(sprite);
 
             Add(new PlayerCollider(OnPlayer));
@@ -74,12 +73,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public override void Added(Scene scene) {
             base.Added(scene);
+
             Image image = new Image(GFX.Game["objects/booster/outline"]);
             image.CenterOrigin();
             image.Color = Color.White * 0.75f;
-            outline = new Entity(Position);
-            outline.Depth = 8999;
-            outline.Visible = false;
+            outline = new Entity(Position) {
+                Depth = 8999,
+                Visible = false
+            };
             outline.Y += 2f;
             outline.Add(image);
             outline.Add(new MirrorReflection());
@@ -89,7 +90,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private void AppearParticles() {
             ParticleSystem particlesBG = SceneAs<Level>().ParticlesBG;
             for (int i = 0; i < 360; i += 30) {
-                particlesBG.Emit(P_Appear, 1, base.Center, Vector2.One * 2f, i * ((float)Math.PI / 180f));
+                particlesBG.Emit(P_Appear, 1, Center, Vector2.One * 2f, i * ((float)Math.PI / 180f));
             }
         }
 
@@ -121,12 +122,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
             BoostingPlayer = false;
             linkVisible = true;
             Audio.Play("event:/game/04_cliffside/greenbooster_dash", Position);
-            loopingSfx.Play("event:/game/05_mirror_temple/redbooster_move"); // temporary
+            loopingSfx.Play("event:/game/05_mirror_temple/redbooster_move");
 
             loopingSfx.DisposeOnTransition = false;
 
             BoostingPlayer = true;
-            base.Tag = (Tags.Persistent | Tags.TransitionUpdate);
+            Tag = (Tags.Persistent | Tags.TransitionUpdate);
             sprite.Play("spin", false, false);
             wiggler.Start();
             dashRoutine.Replace(BoostRoutine(player, direction));
@@ -186,7 +187,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (BoostingPlayer) {
                 PlayerReleased();
                 dashRoutine.Active = false;
-                base.Tag = 0;
+                Tag = 0;
             }
         }
 
@@ -215,7 +216,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
             if (!dashRoutine.Active && respawnTimer <= 0f) {
                 Vector2 target = Vector2.Zero;
-                Player entity = base.Scene.Tracker.GetEntity<Player>();
+                Player entity = Scene.Tracker.GetEntity<Player>();
                 if (entity != null && CollideCheck(entity)) {
                     target = entity.Center + Booster.playerOffset - Position;
                 }
@@ -253,22 +254,22 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private void RenderPurpleBoosterLink(int spriteCount, float minScale) {
             float increment = 1f / spriteCount;
             float centerSegmentScale = 0.7f + 0.3f * actualLinkPercent;
-            linkSegCenterOutline.DrawOutlineCentered(base.Center, Color.Black, centerSegmentScale);
+            linkSegCenterOutline.DrawOutlineCentered(Center, Color.Black, centerSegmentScale);
             for (float t = increment; t <= actualLinkPercent; t += increment) // Black Outline
             {
-                Vector2 vec = Vector2.Lerp(base.Center, sprite.RenderPosition, t * actualLinkPercent);
+                Vector2 vec = Vector2.Lerp(Center, sprite.RenderPosition, t * actualLinkPercent);
                 linkSegOutline.DrawOutlineCentered(vec, Color.Black, 1.01f - (t * minScale));
             }
-            linkSegCenterOutline.DrawCentered(base.Center, Color.White, centerSegmentScale);
+            linkSegCenterOutline.DrawCentered(Center, Color.White, centerSegmentScale);
             for (float t = increment; t <= actualLinkPercent; t += increment) // Pink Outline
             {
-                Vector2 vec = Vector2.Lerp(base.Center, sprite.RenderPosition, t * actualLinkPercent);
+                Vector2 vec = Vector2.Lerp(Center, sprite.RenderPosition, t * actualLinkPercent);
                 linkSegOutline.DrawCentered(vec, Color.White, 1.01f - (t * minScale));
             }
 
-            linkSegCenter.DrawCentered(base.Center, Color.White, centerSegmentScale); // Sprites
+            linkSegCenter.DrawCentered(Center, Color.White, centerSegmentScale); // Sprites
             for (float t = increment; t <= actualLinkPercent; t += increment) {
-                Vector2 vec = Vector2.Lerp(base.Center, sprite.RenderPosition, t * actualLinkPercent);
+                Vector2 vec = Vector2.Lerp(Center, sprite.RenderPosition, t * actualLinkPercent);
                 linkSeg.DrawCentered(vec, Color.White, 1f - (t * minScale));
             }
         }
@@ -295,7 +296,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
             else {
                 MapMetaModeProperties meta = level.Session.MapData.GetMeta();
-                flag = ((meta != null) ? meta.TheoInBubble : null);
+                flag = meta?.TheoInBubble;
             }
             bool? flag2 = flag;
             player.RefillDash();
@@ -309,13 +310,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public static int PurpleBoostUpdate() {
             Util.TryGetPlayer(out Player player);
             DynData<Player> playerData = player.GetData();
+            
             Vector2 boostTarget = playerData.Get<Vector2>("boostTarget");
             Vector2 value = Input.Aim.Value * 3f;
             Vector2 vector = Calc.Approach(player.ExactPosition, boostTarget - player.Collider.Center + value, 80f * Engine.DeltaTime);
+            
             player.MoveToX(vector.X, null);
             player.MoveToY(vector.Y, null);
 
-            // Fixing the solid - purple booster glitch, no more jank :( 
             if (Vector2.DistanceSquared(player.Center, boostTarget) >= 275f) {
                 foreach (PurpleBooster b in player.Scene.Tracker.GetEntities<PurpleBooster>()) {
                     if (b.StartedBoosting) {
@@ -336,6 +338,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Util.TryGetPlayer(out Player player);
             Vector2 boostTarget = player.GetData().Get<Vector2>("boostTarget");
             Vector2 vector = (boostTarget - player.Collider.Center).Floor();
+
             player.MoveToX(vector.X, null);
             player.MoveToY(vector.Y, null);
         }

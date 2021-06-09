@@ -25,7 +25,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
             this.spiked = spiked;
             this.wobble = wobble;
             this.singleUse = singleUse;
-            base.Collider = new Circle(12);
+
+            Collider = new Circle(12);
 
             moveWiggle = Wiggler.Create(0.8f, 2f);
             moveWiggle.StartZero = true;
@@ -42,8 +43,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
             sizeWiggle.StartZero = true;
             Add(sizeWiggle);
         }
+
         public DashBubble(EntityData data, Vector2 offset)
             : this(data.Position + offset, data.Bool("spiked"), data.Bool("singleUse"), data.Bool("wobble")) { }
+        
         public override void Added(Scene scene) {
             base.Added(scene);
         }
@@ -56,10 +59,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     Respawn();
                 }
             }
+
             if (wobble) {
                 UpdateY();
             }
         }
+
         private void Respawn() {
             if (!Collidable) {
                 Collidable = true;
@@ -68,14 +73,23 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Audio.Play("event:/game/04_cliffside/greenbooster_reappear", Position);
             }
         }
+
         private void OnPlayer(Player player) {
             if (!player.DashAttacking) {
-                PlayerPointBounce(player, base.Center, false);
+
+                int dashes = player.Dashes;
+                float stamina = player.Stamina;
+                player.PointBounce(Center);
+                player.Dashes = dashes;
+                player.Stamina = stamina;
+
                 Audio.Play("event:/game/06_reflection/feather_bubble_bounce", Position);
                 Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
+
                 moveWiggle.Start();
                 moveWiggleDir = (Center - player.Center).SafeNormalize(Vector2.UnitY);
                 sizeWiggle.Start();
+
                 if (spiked) {
                     player.Die((player.Position - Position).SafeNormalize());
                 }
@@ -83,6 +97,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 return;
             }
 
+            // dashed into
             Audio.Play("event:/game/05_mirror_temple/redbooster_end");
             sprite.Visible = false;
             Collidable = false;
@@ -90,37 +105,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (!singleUse) {
                 respawnTimer = RespawnTime;
             }
+
             SceneAs<Level>().ParticlesFG.Emit(Player.P_CassetteFly, 6, Center, Vector2.One * 7f);
         }
 
         private void UpdateY() {
             sprite.Position = Vector2.UnitY * sine.Value * 2f + (moveWiggleDir * moveWiggle.Value * -8f);
-        }
-
-        public static void PlayerPointBounce(Player player, Vector2 from, bool refillPlayer = false) {
-            if (player.StateMachine.State == 2) {
-                player.StateMachine.State = 0;
-            }
-            if (player.StateMachine.State == 4 && player.CurrentBooster != null) {
-                player.CurrentBooster.PlayerReleased();
-            }
-            if (refillPlayer) {
-                player.RefillDash();
-                player.RefillStamina();
-            }
-            Vector2 value = (player.Center - from).SafeNormalize();
-            if (value.Y > -0.2f && value.Y <= 0.4f) {
-                value.Y = -0.2f;
-            }
-            player.Speed = value * 200;
-            if (Math.Abs(player.Speed.X) < 80f) {
-                if (player.Speed.X == 0f) {
-                    player.Speed.X = (float)(0 - player.Facing) * 80;
-                }
-                else {
-                    player.Speed.X = (float)Math.Sign(player.Speed.X) * 80;
-                }
-            }
         }
     }
 }

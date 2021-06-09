@@ -39,11 +39,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public VortexBumper(Vector2 position, Vector2? node, string style, bool notCoreMode, bool wobble)
             : base(position) {
-            base.Collider = new Circle(12f);
+            Collider = new Circle(12f);
             Add(new PlayerCollider(OnPlayer));
 
             Add(sine = new SineWave(0.44f, 0f).Randomize());
             this.wobble = wobble;
+
             switch (style) {
                 default:
                 case "Green":
@@ -101,14 +102,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public override void Added(Scene scene) {
             base.Added(scene);
             if (!notCoreMode) {
-                fireMode = (SceneAs<Level>().CoreMode == Session.CoreModes.Hot);
+                fireMode = SceneAs<Level>().CoreMode == Session.CoreModes.Hot;
                 spriteEvil.Visible = fireMode;
                 sprite.Visible = !fireMode;
             }
         }
 
         private void OnChangeMode(Session.CoreModes coreMode) {
-            fireMode = (coreMode == Session.CoreModes.Hot);
+            fireMode = coreMode == Session.CoreModes.Hot;
             if (!fireMode && deadly) {
                 return;
             }
@@ -128,8 +129,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 if (respawnTimer <= 0f) {
                     light.Visible = true;
                     bloom.Visible = true;
+
                     sprite.Play("on");
                     spriteEvil.Play("on");
+
                     if (deadly) {
                         fireMode = true;
                         spriteEvil.Visible = fireMode;
@@ -138,12 +141,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     Audio.Play("event:/game/06_reflection/pinballbumper_reset", Position);
                 }
             }
-            else if (base.Scene.OnInterval(0.05f)) {
+            else if (Scene.OnInterval(0.05f)) {
                 float num = Calc.Random.NextAngle();
-                ParticleType type = fireMode ? Bumper.P_FireAmbience : p_ambiance;
                 float direction = fireMode ? (-(float)Math.PI / 2f) : num;
                 float length = fireMode ? 12 : 8;
-                SceneAs<Level>().Particles.Emit(type, 1, base.Center + Calc.AngleToVector(num, length), Vector2.One * 2f, direction);
+
+                ParticleType type = fireMode ? Bumper.P_FireAmbience : p_ambiance;
+                SceneAs<Level>().Particles.Emit(type, 1, Center + Calc.AngleToVector(num, length), Vector2.One * 2f, direction);
             }
             UpdatePosition();
         }
@@ -152,34 +156,35 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Level level = SceneAs<Level>();
             if (fireMode) {
                 if (!SaveData.Instance.Assists.Invincible) {
-                    Vector2 vector = (player.Center - base.Center).SafeNormalize();
+                    Vector2 vector = (player.Center - Center).SafeNormalize();
                     hitDir = -vector;
                     hitWiggler.Start();
                     Audio.Play("event:/game/09_core/hotpinball_activate", Position);
                     respawnTimer = 0.6f;
                     player.Die(vector);
-                    level.Particles.Emit(Bumper.P_FireHit, 12, base.Center + vector * 12f, Vector2.One * 3f, vector.Angle());
+                    level.Particles.Emit(Bumper.P_FireHit, 12, Center + vector * 12f, Vector2.One * 3f, vector.Angle());
                 }
-            }
-            else if (respawnTimer <= 0f) {
+            } else if (respawnTimer <= 0f) {
                 Audio.Play("event:/game/06_reflection/pinballbumper_hit", Position);
                 respawnTimer = 0.6f;
                 Vector2 vector2 = player.ExplodeLaunch(Position, snapUp: false, sidesOnly: false);
+
                 if (twoDashes) {
                     player.Dashes = 2;
                 }
-
                 if (oneUse) {
                     deadly = true;
                 }
 
                 sprite.Play("hit", restart: true);
                 spriteEvil.Play("hit", restart: true);
+
                 light.Visible = false;
                 bloom.Visible = false;
+
                 level.DirectionalShake(vector2, 0.15f);
-                level.Displacement.AddBurst(base.Center, 0.3f, 8f, 32f, 0.8f);
-                level.Particles.Emit(p_launch, 12, base.Center + vector2 * 12f, Vector2.One * 3f, vector2.Angle());
+                level.Displacement.AddBurst(Center, 0.3f, 8f, 32f, 0.8f);
+                level.Particles.Emit(p_launch, 12, Center + vector2 * 12f, Vector2.One * 3f, vector2.Angle());
             }
         }
 

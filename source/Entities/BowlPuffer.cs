@@ -87,7 +87,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private bool chainExplode = false;
 
         // TODO: Custom sound.
-        // TODO: Clean and remove jank.
 
         public BowlPuffer(EntityData data, Vector2 offset)
             : this(data.Position + offset + (Vector2.UnitY * 8f), data.Bool("noRespawn"), data.Float("explodeTimer", 0f)) { }

@@ -8,7 +8,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/ColorSwitch")]
     [Tracked(false)]
     class ColorSwitch : Solid {
-        private uint Seed;
+        private uint seed;
 
         private MTexture[,] edges = new MTexture[3, 3];
         private SoundSource idleSfx = new SoundSource();
@@ -23,7 +23,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private Color BackgroundColor = defaultBackgroundColor;
         private Color EdgeColor = defaultEdgeColor;
-        private Color actualEdgeColor, actualBackgroundColor;
+        private Color currentEdgeColor, currentBackgroundColor;
 
         private Vector2 scale = Vector2.One;
         private Vector2 scaleStrength = Vector2.One;
@@ -42,12 +42,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
             SurfaceSoundIndex = 9;
 
             if (!blue && !rose && !orange && !lime) {
-                blue = rose = orange = lime = true; // lame but simple fix
+                blue = rose = orange = lime = true; // if all are false, then block is useless, so make it not useless.
             }
 
             string block = "objects/VortexHelper/onoff/switch";
 
-            /* let's go, tiles. */
             int i, j;
             for (i = 0; i < 3; i++) {
                 for (j = 0; j < 3; j++) {
@@ -57,23 +56,15 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             this.random = random;
 
-            // Weird color stuff...
             int colorArraySize = 0;
-            if (blue) {
+            if (blue)
                 colorArraySize++;
-            }
-
-            if (rose) {
+            if (rose)
                 colorArraySize++;
-            }
-
-            if (orange) {
+            if (orange)
                 colorArraySize++;
-            }
-
-            if (lime) {
+            if (lime)
                 colorArraySize++;
-            }
 
             colors = new VortexHelperSession.SwitchBlockColor[colorArraySize];
             if (colorArraySize == 1) {
@@ -112,7 +103,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public override void Render() {
             Vector2 position = Position;
-            Position += base.Shake;
+            Position += Shake;
 
             int x = (int)(Center.X + (X + 1 - Center.X) * scale.X);
             int y = (int)(Center.Y + (Y + 1 - Center.Y) * scale.Y);
@@ -120,22 +111,22 @@ namespace Celeste.Mod.VortexHelper.Entities {
             int rectH = (int)((Height - 2) * scale.Y);
             Rectangle rect = new Rectangle(x, y, rectW, rectH);
 
-            uint seed = Seed;
-
             Color col = random ?
-                Color.Lerp(defaultBackgroundColor, Color.White, (float)(0.05f * Math.Sin(base.Scene.TimeActive * 5f)) + 0.05f)
+                Color.Lerp(defaultBackgroundColor, Color.White, (float)(0.05f * Math.Sin(Scene.TimeActive * 5f)) + 0.05f)
                 : (BackgroundColor != defaultBackgroundColor ?
 
-                    Color.Lerp(actualBackgroundColor, Color.Black, 0.2f)
-                    : actualBackgroundColor);
+                    Color.Lerp(currentBackgroundColor, Color.Black, 0.2f)
+                    : currentBackgroundColor);
 
             Draw.Rect(rect, col);
 
             for (int i = rect.Y; (float)i < rect.Bottom; i += 2) {
-                float scale = 0.05f + (1f + (float)Math.Sin(i / 16f + base.Scene.TimeActive * 2f)) / 2f * 0.2f;
+                float scale = 0.05f + (1f + (float)Math.Sin(i / 16f + Scene.TimeActive * 2f)) / 2f * 0.2f;
                 Draw.Line(rect.X, i, rect.X + rect.Width, i, Color.White * 0.55f * scale);
             }
-            PlaybackBillboard.DrawNoise(rect, ref seed, Color.White * 0.05f);
+
+            uint tempseed = seed;
+            PlaybackBillboard.DrawNoise(rect, ref tempseed, Color.White * 0.05f);
 
             int w = (int)(Width / 8f);
             int h = (int)(Height / 8f);
@@ -150,11 +141,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         renderPos.X = Center.X + (renderPos.X - Center.X) * scale.X;
                         renderPos.Y = Center.Y + (renderPos.Y - Center.Y) * scale.Y;
 
-                        edges[num4, num5].DrawCentered(renderPos, actualEdgeColor, scale);
+                        edges[num4, num5].DrawCentered(renderPos, currentEdgeColor, scale);
                     }
                 }
             }
-
 
             base.Render();
             Position = position;
@@ -163,27 +153,26 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public override void Update() {
             base.Update();
 
-            if (base.Scene.OnInterval(0.1f)) {
-                Seed++;
+            if (Scene.OnInterval(0.1f)) {
+                seed++;
             }
             float t = Calc.Min(1f, 4f * Engine.DeltaTime);
-            actualEdgeColor = Color.Lerp(actualEdgeColor, EdgeColor, t);
-            actualBackgroundColor = Color.Lerp(actualBackgroundColor, BackgroundColor, t);
+            currentEdgeColor = Color.Lerp(currentEdgeColor, EdgeColor, t);
+            currentBackgroundColor = Color.Lerp(currentBackgroundColor, BackgroundColor, t);
 
             t = Engine.DeltaTime * 4f;
             scale.X = Calc.Approach(scale.X, 1f, t);
             scale.Y = Calc.Approach(scale.Y, 1f, t);
-            // unsquish :(
         }
 
-        private void SetEdgeColor(Color targetColor, Color actualColor) {
+        private void SetEdgeColor(Color targetColor, Color currentColor) {
             EdgeColor = targetColor;
-            actualEdgeColor = actualColor;
+            currentEdgeColor = currentColor;
         }
 
-        private void SetBackgroundColor(Color targetColor, Color actualColor) {
+        private void SetBackgroundColor(Color targetColor, Color currentColor) {
             BackgroundColor = targetColor;
-            actualBackgroundColor = actualColor;
+            currentBackgroundColor = currentColor;
         }
 
         private DashCollisionResults Dashed(Player player, Vector2 direction) {
@@ -208,8 +197,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public void Switch(Vector2 direction) {
             scale = new Vector2(
                 1f + (Math.Abs(direction.Y) * 0.5f - Math.Abs(direction.X) * 0.5f) / scaleStrength.X,
-                1f + (Math.Abs(direction.X) * 0.5f - Math.Abs(direction.Y) * 0.5f) / scaleStrength.Y);
-            //that's a squishification vector!
+                1f + (Math.Abs(direction.X) * 0.5f - Math.Abs(direction.Y) * 0.5f) / scaleStrength.Y
+            );
 
             if (random) {
                 nextColorIndex = Calc.Random.Next(0, colors.Length);
@@ -217,22 +206,24 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             VortexHelperModule.SessionProperties.SessionSwitchBlockColor = colors[nextColorIndex];
             Color col = GetColor(VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
+
             UpdateColorSwitches(Scene, colors[nextColorIndex]);
             SetEdgeColor(defaultEdgeColor, col);
-            actualBackgroundColor = Color.White;
+            currentBackgroundColor = Color.White;
 
-            Audio.Play(CustomSFX.game_colorSwitch_hit, base.Center);
+            Audio.Play(CustomSFX.game_colorSwitch_hit, Center);
             if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor)) {
                 Audio.Play(CustomSFX.game_switchBlock_switch,
-                    "tone", GetSoundParam(VortexHelperModule.SessionProperties.SessionSwitchBlockColor));
+                    "tone", GetSoundParam(VortexHelperModule.SessionProperties.SessionSwitchBlockColor)
+                );
             }
 
-            (base.Scene as Level).DirectionalShake(direction, 0.25f);
+            Input.Rumble(RumbleStrength.Strong, RumbleLength.Long);
+            SceneAs<Level>().DirectionalShake(direction, 0.25f);
             StartShaking(0.25f);
 
             ParticleType p = LightningBreakerBox.P_Smash;
             p.Color = col; p.Color2 = Color.Lerp(col, Color.White, 0.5f);
-            Input.Rumble(RumbleStrength.Strong, RumbleLength.Long);
             SmashParticles(direction.Perpendicular(), p);
             SmashParticles(-direction.Perpendicular(), p);
         }
@@ -295,27 +286,27 @@ namespace Celeste.Mod.VortexHelper.Entities {
             int num;
             if (dir == Vector2.UnitX) {
                 direction = 0f;
-                position = base.CenterRight - Vector2.UnitX * 12f;
-                positionRange = Vector2.UnitY * (base.Height - 6f) * 0.5f;
-                num = (int)(base.Height / 8f) * 4;
+                position = CenterRight - Vector2.UnitX * 12f;
+                positionRange = Vector2.UnitY * (Height - 6f) * 0.5f;
+                num = (int)(Height / 8f) * 4;
             }
             else if (dir == -Vector2.UnitX) {
                 direction = (float)Math.PI;
-                position = base.CenterLeft + Vector2.UnitX * 12f;
-                positionRange = Vector2.UnitY * (base.Height - 6f) * 0.5f;
-                num = (int)(base.Height / 8f) * 4;
+                position = CenterLeft + Vector2.UnitX * 12f;
+                positionRange = Vector2.UnitY * (Height - 6f) * 0.5f;
+                num = (int)(Height / 8f) * 4;
             }
             else if (dir == Vector2.UnitY) {
                 direction = (float)Math.PI / 2f;
-                position = base.BottomCenter - Vector2.UnitY * 12f;
-                positionRange = Vector2.UnitX * (base.Width - 6f) * 0.5f;
-                num = (int)(base.Width / 8f) * 4;
+                position = BottomCenter - Vector2.UnitY * 12f;
+                positionRange = Vector2.UnitX * (Width - 6f) * 0.5f;
+                num = (int)(Width / 8f) * 4;
             }
             else {
                 direction = -(float)Math.PI / 2f;
-                position = base.TopCenter + Vector2.UnitY * 12f;
-                positionRange = Vector2.UnitX * (base.Width - 6f) * 0.5f;
-                num = (int)(base.Width / 8f) * 4;
+                position = TopCenter + Vector2.UnitY * 12f;
+                positionRange = Vector2.UnitX * (Width - 6f) * 0.5f;
+                num = (int)(Width / 8f) * 4;
             }
             num += 2;
             SceneAs<Level>().Particles.Emit(smashParticle, num, position, positionRange, direction);
