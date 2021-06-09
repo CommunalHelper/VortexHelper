@@ -1,4 +1,6 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc;
+using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
@@ -35,21 +37,23 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public static class Hooks {
             public static void Hook() {
-                On.Celeste.Player.DashEnd += Player_DashEnd;
+                //On.Celeste.Player.DashEnd += Player_DashEnd;
+                On.Celeste.Booster.PlayerReleased += Booster_PlayerReleased;
                 On.Celeste.Booster.AppearParticles += Booster_AppearParticles;
             }
 
             public static void Unhook() {
-                On.Celeste.Player.DashEnd -= Player_DashEnd;
+                //On.Celeste.Player.DashEnd -= Player_DashEnd;
+                On.Celeste.Booster.PlayerReleased -= Booster_PlayerReleased;
                 On.Celeste.Booster.AppearParticles -= Booster_AppearParticles;
             }
 
-            private static void Player_DashEnd(On.Celeste.Player.orig_DashEnd orig, Player self) {
+            private static void Booster_PlayerReleased(On.Celeste.Booster.orig_PlayerReleased orig, Booster self) {
                 orig(self);
-                if (self.LastBooster is LavenderBooster booster && booster.BoostingPlayer) {
-                    Audio.Play(SFX.game_05_redbooster_end, self.Center);
-                    PurpleBooster.LaunchPlayerParticles(self, self.DashDir, LavenderBooster.P_BurstExplodeLavender);
-                    PurpleBooster.PurpleBoosterExplodeLaunch(self, new DynData<Player>(self), self.Center - self.DashDir, null, -1f);
+                if (Util.TryGetPlayer(out Player player) && player.LastBooster is LavenderBooster) {
+                    Audio.Play(SFX.game_05_redbooster_end, player.Center);
+                    PurpleBooster.LaunchPlayerParticles(player, player.DashDir, P_BurstExplodeLavender);
+                    PurpleBooster.PurpleBoosterExplodeLaunch(player, player.GetData(), self.Center - player.DashDir, null, -1f);
                 }
             }
 
