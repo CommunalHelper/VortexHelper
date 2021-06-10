@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vortex-helper", "source\vortex-helper.csproj", "{4302273A-420A-4FB9-A20E-9F0A2D79CE84}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VortexHelper", "source\VortexHelper.csproj", "{4302273A-420A-4FB9-A20E-9F0A2D79CE84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
