@@ -9,7 +9,7 @@ using System;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/LavenderBooster")]
     [TrackedAs(typeof(Booster))]
-    class LavenderBooster : Booster {
+    public class LavenderBooster : Booster {
 
         public static readonly ParticleType P_BurstLavender = new ParticleType(P_Burst);
         public static readonly ParticleType P_BurstExplodeLavender = new ParticleType(P_Burst);
@@ -35,7 +35,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             P_BurstExplodeLavender.SpeedMax = 250;
         }
 
-        public static class Hooks {
+        internal static class Hooks {
             public static void Hook() {
                 //On.Celeste.Player.DashEnd += Player_DashEnd;
                 On.Celeste.Booster.PlayerReleased += Booster_PlayerReleased;

@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using MonoMod.Utils;
 
 namespace Celeste.Mod.VortexHelper.Misc {
-    public static class MiscHooks {
+    internal static class MiscHooks {
         public static void Hook() {
             // BubbleWrapBlock and ColorSwitch interactions with some vanilla entities.
             On.Celeste.FallingBlock.LandParticles += FallingBlock_LandParticles;

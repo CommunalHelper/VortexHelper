@@ -5,7 +5,7 @@ using System;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/BowlPuffer")]
-    class BowlPuffer : Actor {
+    public class BowlPuffer : Actor {
 
         [Tracked(false)]
         public class BowlPufferCollider : Component {
@@ -330,18 +330,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private void DoEntityCustomInteraction() {
-            // Player
-            Player player = CollideFirst<Player>();
-            if (player != null) {
-                player.ExplodeLaunch(Position, snapUp: false, sidesOnly: true);
-            }
-            player = SceneAs<Level>().Tracker.GetEntity<Player>();
-
-            // Theo Crystal
-            TheoCrystal theoCrystal = CollideFirst<TheoCrystal>();
-            if (theoCrystal != null && !Scene.CollideCheck<Solid>(Position, theoCrystal.Center)) {
-                theoCrystal.ExplodeLaunch(Position);
-            }
+            Player player = SceneAs<Level>().Tracker.GetEntity<Player>();
 
             // Touch Switches
             foreach (TouchSwitch entity2 in Scene.Tracker.GetEntities<TouchSwitch>()) {
@@ -358,69 +347,57 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             foreach (Actor e in CollideAll<Actor>()) {
-                if (e is Puffer) {
-                    VortexHelperModule.Puffer_Explode.Invoke(e, new object[] { });
-                    VortexHelperModule.Puffer_GotoGone.Invoke(e, new object[] { });
-                    continue;
-                }
-
-                if (e is BowlPuffer && e != this) {
-                    BowlPuffer e_ = e as BowlPuffer;
-                    e_.chainExplode = (!e_.exploded && e_.state != States.Gone);
-
+                switch (e) {
+                    case Player p:
+                        p.ExplodeLaunch(Position, snapUp: false, sidesOnly: true);
+                        break;
+                    case TheoCrystal crystal:
+                        if (!Scene.CollideCheck<Solid>(Position, crystal.Center))
+                            crystal.ExplodeLaunch(Position);
+                        break;
+                    case Puffer puffer:
+                        VortexHelperModule.Puffer_Explode.Invoke(puffer, null);
+                        VortexHelperModule.Puffer_GotoGone.Invoke(puffer, null);
+                        break;
+                    case BowlPuffer puffer:
+                        puffer.chainExplode = !puffer.exploded && puffer.state != States.Gone;
+                        break;
                 }
             }
 
             foreach (Solid e in CollideAll<Solid>()) {
-                // Temple Cracked Blocks
-                if (e is TempleCrackedBlock) {
-                    (e as TempleCrackedBlock).Break(Position); continue;
-                }
-
-                // Color Switches
-                if (e is ColorSwitch) {
-                    (e as ColorSwitch).Switch(Calc.FourWayNormal(e.Center - Center)); continue;
-                }
-
-                // Dash Blocks
-                if (e is DashBlock) {
-                    (e as DashBlock).Break(Center, Calc.FourWayNormal(e.Center - Center), true, true); continue;
-                }
-
-                // Falling Blocks
-                if (e is FallingBlock) {
-                    (e as FallingBlock).Triggered = true; continue;
-                }
-
-                // Move Blocks
-                if (e is MoveBlock) {
-                    (e as MoveBlock).OnStaticMoverTrigger(null); continue;
-                }
-
-                // Kevins
-                if (e is CrushBlock) {
-                    // e.OnDashed(Player player = null, Vector2 direction = Calc.FourWayNormal(e.Center - Center));
-                    VortexHelperModule.CrushBlock_OnDashed.Invoke(e as CrushBlock, new object[] { null, Calc.FourWayNormal(e.Center - Center) });
-                    continue;
-                }
-
-                // Bubble Wrap Blocks
-                if (e is BubbleWrapBlock) {
-                    (e as BubbleWrapBlock).Break();
-                    continue;
-                }
-
-                // Lightning Breaker Boxes
-                if (e is LightningBreakerBox) {
-                    if (player != null) {
-                        float stamina = player.Stamina;
-                        int dashes = player.Dashes;
-                        (e as LightningBreakerBox).OnDashCollide(player, Calc.FourWayNormal(e.Center - Center));
-                        player.Dashes = dashes;
-                        player.Stamina = stamina;
-                    }
-                    continue;
-                }
+                switch (e) {
+                    case TempleCrackedBlock block:
+                        block.Break(Position); 
+                        break;
+                    case ColorSwitch @switch:
+                        @switch.Switch(Calc.FourWayNormal(e.Center - Center)); 
+                        break;
+                    case DashBlock block:
+                        block.Break(Center, Calc.FourWayNormal(e.Center - Center), true, true); 
+                        break;
+                    case FallingBlock block:
+                        block.Triggered = true; 
+                        break;
+                    case MoveBlock block:
+                        block.OnStaticMoverTrigger(null); 
+                        break;
+                    case CrushBlock block:
+                        VortexHelperModule.CrushBlock_OnDashed.Invoke(block, new object[] { null, Calc.FourWayNormal(block.Center - Center) }); 
+                        break;
+                    case BubbleWrapBlock block:
+                        block.Break(); 
+                        break;
+                    case LightningBreakerBox box:
+                        if (player != null) {
+                            float stamina = player.Stamina;
+                            int dashes = player.Dashes;
+                            box.OnDashCollide(player, Calc.FourWayNormal(box.Center - Center));
+                            player.Dashes = dashes;
+                            player.Stamina = stamina;
+                        }
+                        break;
+                };
             }
         }
 

@@ -6,7 +6,7 @@ using System;
 using System.Reflection;
 
 namespace Celeste.Mod.VortexHelper {
-    class VortexHelperModule : EverestModule {
+    public class VortexHelperModule : EverestModule {
         public static VortexHelperModule Instance;
 
         public static SpriteBank FloorBoosterSpriteBank;

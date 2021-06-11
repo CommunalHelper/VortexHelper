@@ -11,7 +11,10 @@ using System.Collections;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/PurpleBooster")]
     [Tracked]
-    class PurpleBooster : Entity {
+    public class PurpleBooster : Entity {
+        internal const string POSSIBLE_EARLY_DASHSPEED = "purpleBoostPossibleEarlyDashSpeed";
+        internal const string EARLY_EXIT = "purpleBoosterEarlyExit";
+
         private Sprite sprite;
         private Wiggler wiggler;
         private Entity outline;
@@ -78,7 +81,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             image.CenterOrigin();
             image.Color = Color.White * 0.75f;
             outline = new Entity(Position) {
-                Depth = 8999,
+                Depth = Depths.BGDecals - 1,
                 Visible = false
             };
             outline.Y += 2f;
@@ -103,7 +106,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
                 Boost(player, this);
 
-                Audio.Play("event:/game/04_cliffside/greenbooster_enter", Position);
+                Audio.Play(SFX.game_04_greenbooster_enter, Position);
                 wiggler.Start();
                 sprite.Play("inside", false, false);
             }
@@ -121,8 +124,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
             StartedBoosting = false;
             BoostingPlayer = false;
             linkVisible = true;
-            Audio.Play("event:/game/04_cliffside/greenbooster_dash", Position);
-            loopingSfx.Play("event:/game/05_mirror_temple/redbooster_move");
+            Audio.Play(SFX.game_04_greenbooster_dash, Position);
+            loopingSfx.Play(SFX.game_05_redbooster_move_loop);
 
             loopingSfx.DisposeOnTransition = false;
 
@@ -150,10 +153,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             }
             PlayerReleased();
-            if (player.StateMachine.State == 4) {
+            if (player.StateMachine.State == Player.StBoost) {
                 sprite.Visible = false;
             }
-            linkVisible = player.StateMachine.State == 2 || player.StateMachine.State == 0;
+            linkVisible = player.StateMachine.State == Player.StDash || player.StateMachine.State == Player.StNormal;
             linkPercent = linkVisible ? 0.0f : 1.0f;
 
             if (!linkVisible) {
@@ -174,7 +177,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private void PlayerReleased() {
-            Audio.Play("event:/game/05_mirror_temple/redbooster_end", sprite.RenderPosition);
+            Audio.Play(SFX.game_05_redbooster_end, sprite.RenderPosition);
             sprite.Play("pop");
             cannotUseTimer = 0f;
             respawnTimer = 1f;
@@ -192,7 +195,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private void Respawn() {
-            Audio.Play("event:/game/04_cliffside/greenbooster_reappear", Position);
+            Audio.Play(SFX.game_04_greenbooster_reappear, Position);
             sprite.Position = Vector2.Zero;
             sprite.Play("appear", restart: true);
             sprite.Visible = true;
@@ -355,7 +358,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Util.TryGetPlayer(out Player player);
             DynData<Player> playerData = player.GetData();
             player.DashDir = Input.LastAim.EightWayNormal();
-            playerData.Set("purpleBoostPossibleEarlyDashSpeed", Vector2.Zero);
+            playerData.Set(POSSIBLE_EARLY_DASHSPEED, Vector2.Zero);
 
             foreach (PurpleBooster b in player.Scene.Tracker.GetEntities<PurpleBooster>()) {
                 if (b.StartedBoosting) {
@@ -373,8 +376,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Util.TryGetPlayer(out Player player);
                 DynData<Player> playerData = player.GetData();
 
-                playerData.Set("purpleBoosterEarlyExit", true);
-                player.LiftSpeed += playerData.Get<Vector2>("purpleBoostPossibleEarlyDashSpeed");
+                playerData.Set(EARLY_EXIT, true);
+                player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
 
                 Input.Dash.ConsumePress();
                 return 2;
@@ -393,10 +396,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 t = Calc.Approach(t, 1.0f, Engine.DeltaTime * 1.5f);
                 Vector2 vec = origin + (Vector2.UnitY * 6f) + (player.DashDir * 60f * (float)Math.Sin(t * Math.PI));
 
-                playerData.Set("purpleBoostPossibleEarlyDashSpeed", earlyExitBoost = (t > .6f) ? (t - .5f) * 200f * -player.DashDir : Vector2.Zero);
+                playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost = (t > .6f) ? (t - .5f) * 200f * -player.DashDir : Vector2.Zero);
 
                 if (player.CollideCheck<Solid>(vec)) {
-                    player.StateMachine.State = 0;
+                    player.StateMachine.State = Player.StNormal;
                     yield break;
                 }
                 player.MoveToX(vec.X); player.MoveToY(vec.Y);
@@ -438,13 +441,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 player.RefillDash();
             }
             player.RefillStamina();
-            player.StateMachine.State = 7;
+            player.StateMachine.State = Player.StLaunch;
             player.Speed *= factor;
         }
 
         #endregion
 
-        public static class Hooks {
+        internal static class Hooks {
             public static void Hook() {
                 On.Celeste.Player.DashBegin += Player_DashBegin;
                 On.Celeste.Player.ctor += Player_ctor;
@@ -458,9 +461,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
             private static void Player_DashBegin(On.Celeste.Player.orig_DashBegin orig, Player self) {
                 orig(self);
                 DynData<Player> playerData = self.GetData();
-                if (playerData.Get<bool>("purpleBoosterEarlyExit")) {
+                if (playerData.Get<bool>(EARLY_EXIT)) {
                     --self.Dashes;
-                    playerData.Set("purpleBoosterEarlyExit", false);
+                    playerData.Set(EARLY_EXIT, false);
                 }
             }
 

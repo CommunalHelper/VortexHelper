@@ -1,5 +1,5 @@
 ﻿namespace Celeste.Mod.VortexHelper {
-    class VortexHelperSession : EverestModuleSession {
+    public class VortexHelperSession : EverestModuleSession {
 
         public enum SwitchBlockColor {
             Blue, Rose, Orange, Lime

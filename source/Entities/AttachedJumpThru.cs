@@ -6,7 +6,7 @@ using MonoMod.Utils;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/AttachedJumpThru")]
     [Tracked(false)]
-    class AttachedJumpThru : JumpThru {
+    public class AttachedJumpThru : JumpThru {
 
         private int columns;
 
@@ -28,7 +28,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public AttachedJumpThru(Vector2 position, int width, string overrideTexture, int overrideSoundIndex = -1)
             : base(position, width, safe: false) {
             columns = width / 8;
-            Depth = -60; // ?
+            Depth = Depths.Dust - 10; // ?
 
             this.overrideTexture = overrideTexture;
             this.overrideSoundIndex = overrideSoundIndex;
@@ -61,21 +61,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (overrideSoundIndex > 0) {
                 SurfaceSoundIndex = overrideSoundIndex;
             } else {
-                switch (jumpthru.ToLower()) {
-                    case "dream":
-                        SurfaceSoundIndex = 32;
-                        break;
-                    case "temple":
-                    case "templeb":
-                        SurfaceSoundIndex = 8;
-                        break;
-                    case "core":
-                        SurfaceSoundIndex = 3;
-                        break;
-                    default:
-                        SurfaceSoundIndex = 5;
-                        break;
-                }
+                SurfaceSoundIndex = (jumpthru.ToLower()) switch {
+                    "dream" => SurfaceIndex.AuroraGlass,
+                    "temple" or "templeb" => SurfaceIndex.Brick,
+                    "core" => SurfaceIndex.Dirt,
+                    _ => SurfaceIndex.Wood,
+                };
             }
 
             MTexture mTexture = GFX.Game["objects/jumpthru/" + areaData.Jumpthru];
@@ -115,7 +106,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (CollideCheck(solid, Position + Vector2.UnitX) || CollideCheck(solid, Position - Vector2.UnitX)) {
                 staticMover.Platform = Platform = solid;
 
-                if (VisibleWhenDisabled = solid is CassetteBlock || solid is SwitchBlock) {
+                if (VisibleWhenDisabled = solid is CassetteBlock or SwitchBlock) {
                     DisabledColor = Color.Lerp(Color.Black, Color.White, .4f);
                 }
                 return true;
@@ -164,7 +155,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private void SetColor(Color color) {
-            foreach (Component component in base.Components) {
+            foreach (Component component in Components) {
                 if (component is Image image) {
                     image.Color = color;
                 }

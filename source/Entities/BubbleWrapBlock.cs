@@ -7,7 +7,7 @@ using System;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/BubbleWrapBlock")]
     [Tracked(false)]
-    class BubbleWrapBlock : Solid {
+    public class BubbleWrapBlock : Solid {
 
         private enum States {
             Idle,
@@ -123,7 +123,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         public void Break() {
-            breakSfx.Play("event:/game/general/wall_break_stone");
+            breakSfx.Play(SFX.game_gen_wallbreak_stone);
 
             for (int i = 0; i < Width / 8f; i++) {
                 for (int j = 0; j < Height / 8f; j++) {
@@ -164,7 +164,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 rectEffectInflate = 0f;
 
                 EnableStaticMovers();
-                breakSfx.Play("event:/game/05_mirror_temple/redbooster_reappear");
+                breakSfx.Play(SFX.game_05_redbooster_reappear);
                 Collidable = true;
                 state = States.Idle;
             }

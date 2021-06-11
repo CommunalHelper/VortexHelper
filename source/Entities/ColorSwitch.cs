@@ -1,13 +1,14 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
-using VortexHelper;
+using System.Linq;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/ColorSwitch")]
     [Tracked(false)]
-    class ColorSwitch : Solid {
+    public class ColorSwitch : Solid {
         private uint seed;
 
         private MTexture[,] edges = new MTexture[3, 3];
@@ -15,11 +16,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private static readonly Color defaultBackgroundColor = Calc.HexToColor("191919");
         private static readonly Color defaultEdgeColor = Calc.HexToColor("646464");
-
-        private static readonly Color blueColor = Calc.HexToColor("3232ff");
-        private static readonly Color roseColor = Calc.HexToColor("ff3265");
-        private static readonly Color orangeColor = Calc.HexToColor("ff9532");
-        private static readonly Color limeColor = Calc.HexToColor("9cff32");
 
         private Color BackgroundColor = defaultBackgroundColor;
         private Color EdgeColor = defaultEdgeColor;
@@ -39,7 +35,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random)
             : base(position, width, height, true) {
-            SurfaceSoundIndex = 9;
+            SurfaceSoundIndex = SurfaceIndex.ZipMover;
 
             if (!blue && !rose && !orange && !lime) {
                 blue = rose = orange = lime = true; // if all are false, then block is useless, so make it not useless.
@@ -47,35 +43,27 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             string block = "objects/VortexHelper/onoff/switch";
 
-            int i, j;
-            for (i = 0; i < 3; i++) {
-                for (j = 0; j < 3; j++) {
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
                     edges[i, j] = GFX.Game[block].GetSubtexture(i * 8, j * 8, 8, 8);
                 }
             }
 
             this.random = random;
 
-            int colorArraySize = 0;
-            if (blue)
-                colorArraySize++;
-            if (rose)
-                colorArraySize++;
-            if (orange)
-                colorArraySize++;
-            if (lime)
-                colorArraySize++;
+            bool[] colorBools = new bool[] { blue, rose, orange, lime };
+            int colorArraySize = colorBools.Count(b => b);
 
             colors = new VortexHelperSession.SwitchBlockColor[colorArraySize];
-            if (colorArraySize == 1) {
-                singleColor = true;
+            singleColor = colorArraySize == 1;
+
+            int arrIdx = 0;
+            for (int i = 0; i < colorBools.Length; i++) {
+                if (colorBools[i]) {
+                    colors[arrIdx++] = (VortexHelperSession.SwitchBlockColor) i;
+                }
             }
 
-            i = -1;
-            if (blue) { i++; colors[i] = VortexHelperSession.SwitchBlockColor.Blue; }
-            if (rose) { i++; colors[i] = VortexHelperSession.SwitchBlockColor.Rose; }
-            if (orange) { i++; colors[i] = VortexHelperSession.SwitchBlockColor.Orange; }
-            if (lime) { i++; colors[i] = VortexHelperSession.SwitchBlockColor.Lime; }
             NextColor(colors[nextColorIndex], true);
 
             Add(new LightOcclude());
@@ -91,14 +79,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             SetEdgeColor(EdgeColor, EdgeColor);
-            Color col = colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor ? defaultBackgroundColor : GetColor(colors[nextColorIndex]);
+            Color col = colors[nextColorIndex].IsActive() ? defaultBackgroundColor : colors[nextColorIndex].GetColor();
             SetBackgroundColor(col, col);
             OnDashCollide = Dashed;
         }
 
         public override void Awake(Scene scene) {
             base.Awake(scene);
-            idleSfx.Play("event:/game/01_forsaken_city/console_static_loop");
+            idleSfx.Play(SFX.game_01_console_static_loop);
         }
 
         public override void Render() {
@@ -120,7 +108,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             Draw.Rect(rect, col);
 
-            for (int i = rect.Y; (float)i < rect.Bottom; i += 2) {
+            for (int i = rect.Y; i < rect.Bottom; i += 2) {
                 float scale = 0.05f + (1f + (float)Math.Sin(i / 16f + Scene.TimeActive * 2f)) / 2f * 0.2f;
                 Draw.Line(rect.X, i, rect.X + rect.Width, i, Color.White * 0.55f * scale);
             }
@@ -180,13 +168,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 return DashCollisionResults.NormalCollision;
             }
 
-            if (colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor) {
+            if (colors[nextColorIndex].IsActive()) {
                 return DashCollisionResults.NormalCollision;
             }
             // no switch, normal collision
 
-            if (player.StateMachine.State == 5) {
-                player.StateMachine.State = 0;
+            if (player.StateMachine.State == Player.StRedDash) {
+                player.StateMachine.State = Player.StNormal;
             }
 
             Switch(direction);
@@ -205,7 +193,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             VortexHelperModule.SessionProperties.SessionSwitchBlockColor = colors[nextColorIndex];
-            Color col = GetColor(VortexHelperModule.SessionProperties.SessionSwitchBlockColor);
+            Color col = VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetColor();
 
             UpdateColorSwitches(Scene, colors[nextColorIndex]);
             SetEdgeColor(defaultEdgeColor, col);
@@ -214,7 +202,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Audio.Play(CustomSFX.game_colorSwitch_hit, Center);
             if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor)) {
                 Audio.Play(CustomSFX.game_switchBlock_switch,
-                    "tone", GetSoundParam(VortexHelperModule.SessionProperties.SessionSwitchBlockColor)
+                    "tone", VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetSoundParam()
                 );
             }
 
@@ -226,34 +214,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
             p.Color = col; p.Color2 = Color.Lerp(col, Color.White, 0.5f);
             SmashParticles(direction.Perpendicular(), p);
             SmashParticles(-direction.Perpendicular(), p);
-        }
-
-        private static Color GetColor(VortexHelperSession.SwitchBlockColor color) {
-            switch (color) {
-                default:
-                case VortexHelperSession.SwitchBlockColor.Blue:
-                    return blueColor;
-                case VortexHelperSession.SwitchBlockColor.Rose:
-                    return roseColor;
-                case VortexHelperSession.SwitchBlockColor.Orange:
-                    return orangeColor;
-                case VortexHelperSession.SwitchBlockColor.Lime:
-                    return limeColor;
-            }
-        }
-
-        public static int GetSoundParam(VortexHelperSession.SwitchBlockColor color) {
-            switch (color) {
-                default:
-                case VortexHelperSession.SwitchBlockColor.Blue:
-                    return 0;
-                case VortexHelperSession.SwitchBlockColor.Rose:
-                    return 1;
-                case VortexHelperSession.SwitchBlockColor.Orange:
-                    return 2;
-                case VortexHelperSession.SwitchBlockColor.Lime:
-                    return 3;
-            }
         }
 
         public static void UpdateColorSwitches(Scene scene, VortexHelperSession.SwitchBlockColor color) {
@@ -272,11 +232,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     nextColorIndex = 0;
                 }
 
-                if (colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor) {
+                if (colors[nextColorIndex].IsActive()) {
                     nextColorIndex++;
                 }
             }
-            BackgroundColor = colors[nextColorIndex] == VortexHelperModule.SessionProperties.SessionSwitchBlockColor ? defaultBackgroundColor : GetColor(colors[nextColorIndex]);
+            BackgroundColor = colors[nextColorIndex].IsActive() ? defaultBackgroundColor : colors[nextColorIndex].GetColor();
         }
 
         private void SmashParticles(Vector2 dir, ParticleType smashParticle) {

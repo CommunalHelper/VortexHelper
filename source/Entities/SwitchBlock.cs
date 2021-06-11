@@ -1,4 +1,5 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Collections.Generic;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/SwitchBlock")]
     [Tracked(false)]
-    class SwitchBlock : Solid {
+    public class SwitchBlock : Solid {
 
         private class BoxSide : Entity {
             private SwitchBlock block;
@@ -41,11 +42,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private int blockHeight = 2;
 
-        public static Color BlueSwitchBlock = Calc.HexToColor("3232ff");
-        public static Color RoseSwitchBlock = Calc.HexToColor("ff3265");
-        public static Color OrangeSwitchBlock = Calc.HexToColor("ff9532");
-        public static Color LimeSwitchBlock = Calc.HexToColor("9cff32");
-
         public SwitchBlock(EntityData data, Vector2 offset)
             : this(data.Position + offset, data.Width, data.Height, data.Int("index", 0)) { }
 
@@ -54,26 +50,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
             SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
             Index = index;
 
-            switch (Index) {
-                default:
-                case 0:
-                    SwitchBlockColor = VortexHelperSession.SwitchBlockColor.Blue;
-                    color = BlueSwitchBlock;
-                    break;
-                case 1:
-                    SwitchBlockColor = VortexHelperSession.SwitchBlockColor.Rose;
-                    color = RoseSwitchBlock;
-                    break;
-                case 2:
-                    SwitchBlockColor = VortexHelperSession.SwitchBlockColor.Orange;
-                    color = OrangeSwitchBlock;
-                    break;
-                case 3:
-                    SwitchBlockColor = VortexHelperSession.SwitchBlockColor.Lime;
-                    color = LimeSwitchBlock;
-                    break;
-            }
-            Activated = Collidable = SwitchBlockColor == VortexHelperModule.SessionProperties.SessionSwitchBlockColor;
+            SwitchBlockColor = Index switch {
+                1 => VortexHelperSession.SwitchBlockColor.Rose,
+                2 => VortexHelperSession.SwitchBlockColor.Orange,
+                3 => VortexHelperSession.SwitchBlockColor.Lime,
+                _ => VortexHelperSession.SwitchBlockColor.Blue,
+            };
+            color = SwitchBlockColor.GetColor();
+            Activated = Collidable = SwitchBlockColor.IsActive();
 
             Add(occluder = new LightOcclude());
         }
@@ -231,7 +215,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private bool CheckForSame(float x, float y) {
-            foreach (SwitchBlock entity in base.Scene.Tracker.GetEntities<SwitchBlock>()) {
+            foreach (SwitchBlock entity in Scene.Tracker.GetEntities<SwitchBlock>()) {
                 if (entity.Index == Index && entity.Collider.Collide(new Rectangle((int)x, (int)y, 8, 8))) {
                     return true;
                 }
@@ -263,7 +247,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Depth = Collidable ? Depths.Player - 10 : 9880;
 
             foreach (StaticMover staticMover in staticMovers) {
-                staticMover.Entity.Depth = base.Depth + 1;
+                staticMover.Entity.Depth = Depth + 1;
             }
             occluder.Visible = Collidable;
 
@@ -308,7 +292,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         public override void Update() {
             base.Update();
-            Activated = SwitchBlockColor == VortexHelperModule.SessionProperties.SessionSwitchBlockColor;
+            Activated = SwitchBlockColor.IsActive();
 
             if (groupLeader && Activated && !Collidable) {
                 bool isPlayerSafe = CheckPlayerSafe();

@@ -1,5 +1,5 @@
-﻿namespace VortexHelper {
-    class CustomSFX {
+﻿namespace Celeste.Mod.VortexHelper {
+    public class CustomSFX {
         // Color Switch
         public const string game_colorSwitch_hit = "event:/vortexHelperEvents/game/colorSwitch/hit";
 
