@@ -12,7 +12,7 @@ using System.Collections.Generic;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/FloorBooster")]
     [Tracked(false)]
-    class FloorBooster : Entity {
+    public class FloorBooster : Entity {
         private enum DisableMode {
             Disappear, ColorFade
         }
@@ -83,7 +83,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private void OnEnable() {
             if (!IceMode) {
-                idleSfx.Play("event:/env/local/09_core/conveyor_idle");
+                idleSfx.Play(SFX.env_loc_09_conveyer_idle);
             }
 
             Active = Collidable = Visible = true;
@@ -133,7 +133,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (IceMode) {
                 idleSfx.Stop();
             } else if (!idleSfx.Playing) {
-                idleSfx.Play("event:/env/local/09_core/conveyor_idle");
+                idleSfx.Play(SFX.env_loc_09_conveyer_idle);
             }
         }
 
@@ -143,7 +143,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private bool IsRiding(Solid solid) {
             if (CollideCheckOutside(solid, Position + Vector2.UnitY)) {
-                disableMode = (solid is CassetteBlock || solid is SwitchBlock) ? DisableMode.ColorFade : DisableMode.Disappear;
+                disableMode = (solid is CassetteBlock or SwitchBlock) ? DisableMode.ColorFade : DisableMode.Disappear;
                 return true;
             }
             return false;
@@ -188,7 +188,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 activateSfx.Param("end", 1f);
             }
             else {
-                activateSfx.Play("event:/game/09_core/conveyor_activate", "end", 0f);
+                activateSfx.Play(SFX.game_09_conveyor_activate, "end", 0f);
             }
         }
 
@@ -201,14 +201,14 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private void PositionSfx(Player entity) {
             if (entity != null) {
-                idleSfx.Position = Calc.ClosestPointOnLine(Position, Position + new Vector2(base.Width, 0f), entity.Center) - Position;
+                idleSfx.Position = Calc.ClosestPointOnLine(Position, Position + new Vector2(Width, 0f), entity.Center) - Position;
                 idleSfx.Position.Y += 7;
                 activateSfx.Position = idleSfx.Position;
                 idleSfx.UpdateSfxPosition(); activateSfx.UpdateSfxPosition();
             }
         }
 
-        public static class Hooks {
+        internal static class Hooks {
             public static void Hook() {
                 IL.Celeste.Player.NormalUpdate += Player_FrictionNormalUpdate;
                 On.Celeste.Player.NormalUpdate += Player_NormalUpdate;
@@ -247,7 +247,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 DynData<Player> playerData = self.GetData();
                 playerData.Set("floorBoosterSpeed", 0f);
                 playerData.Set<FloorBooster>("lastFloorBooster", null);
-                playerData.Set("purpleBoosterEarlyExit", false);
+                playerData.Set(PurpleBooster.EARLY_EXIT, false);
             }
 
             private static int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self) {
@@ -278,7 +278,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         continue;
                     }
 
-                    if (self.CollideCheck(entity) && self.OnGround() && self.StateMachine != 1 && self.Bottom <= entity.Bottom) {
+                    if (self.CollideCheck(entity) && self.OnGround() && self.StateMachine != Player.StClimb && self.Bottom <= entity.Bottom) {
                         if (!touchedFloorBooster) {
                             floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 1f, 4f * Engine.DeltaTime);
                             touchedFloorBooster = true;
@@ -319,7 +319,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                             continue;
                         }
 
-                        if (player.CollideCheck(entity) && player.OnGround() && player.StateMachine != 1
+                        if (player.CollideCheck(entity) && player.OnGround() && player.StateMachine != Player.StClimb
                             && player.Bottom <= entity.Bottom) {
                             return player.SceneAs<Level>().CoreMode == Session.CoreModes.Cold ? 0.4f : 0.2f;
                         }

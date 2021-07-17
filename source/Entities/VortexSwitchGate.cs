@@ -7,8 +7,8 @@ using System.Collections;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/VortexSwitchGate")]
-    class VortexSwitchGate : Solid {
-        private enum SwitchGateBehavior {
+    public class VortexSwitchGate : Solid {
+        public enum SwitchGateBehavior {
             Crush,
             Shatter
         }
@@ -18,7 +18,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private Vector2 node;
         private bool persistent;
-        private SwitchGateBehavior behavior;
+        public SwitchGateBehavior Behavior;
 
         private Color inactiveColor = Calc.HexToColor("5fcde4");
         private Color activeColor = Color.White;
@@ -34,40 +34,22 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private float crushSpeed;
 
         public VortexSwitchGate(EntityData data, Vector2 offset)
-            : this(data.Position + offset, data.Width, data.Height, data.Nodes[0] + offset, data.Bool("persistent"), data.Attr("sprite", "block"), data.Attr("behavior", "crush"), data.Float("crushDuration")) { }
+            : this(data.Position + offset, data.Width, data.Height, data.Nodes[0] + offset, data.Bool("persistent"), data.Attr("sprite", "block"), data.Enum("behavior", SwitchGateBehavior.Crush), data.Float("crushDuration")) { }
 
-        public VortexSwitchGate(Vector2 position, int width, int height, Vector2 node, bool persistent, string spriteName, string behavior, float crushSpeed)
+        public VortexSwitchGate(Vector2 position, int width, int height, Vector2 node, bool persistent, string spriteName, SwitchGateBehavior behavior, float crushSpeed)
             : base(position, width, height, safe: false) {
             this.node = node;
             this.persistent = persistent;
             this.crushSpeed = Calc.Min(Calc.Max(crushSpeed, 0.5f), 2f); // 0.5 < crushSpeed < 2 so the sound doesn't get messed up.
             
-            switch (behavior) {
-                default:
-                case "crush":
-                    this.behavior = SwitchGateBehavior.Crush;
-                    break;
-                case "shatter":
-                    this.behavior = SwitchGateBehavior.Shatter;
-                    break;
-            }
+            Behavior = behavior;
 
-            switch (spriteName) {
-                default:
-                case "block":
-                    debrisPath = "debris/VortexHelper/disintegate/1";
-                    break;
-                case "mirror":
-                    debrisPath = "debris/VortexHelper/disintegate/2";
-                    break;
-                case "temple":
-                    debrisPath = "debris/VortexHelper/disintegate/3";
-                    break;
-                case "stars":
-                    debrisPath = "debris/VortexHelper/disintegate/4";
-                    break;
-            }
-
+            debrisPath = spriteName switch {
+                "mirror" => "debris/VortexHelper/disintegate/2",
+                "temple" => "debris/VortexHelper/disintegate/3",
+                "stars" => "debris/VortexHelper/disintegate/4",
+                _ => "debris/VortexHelper/disintegate/1",
+            };
             Add(icon = new Sprite(GFX.Game, "objects/switchgate/icon") {
                 Rate = 0f,
                 Color = inactiveColor,
@@ -98,7 +80,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             base.Awake(scene);
             if (Switch.CheckLevelFlag(SceneAs<Level>())) {
 
-                if (behavior == SwitchGateBehavior.Crush) {
+                if (Behavior == SwitchGateBehavior.Crush) {
                     MoveTo(node);
                     icon.Rate = 0f;
                     icon.SetAnimationFrame(0);
@@ -107,7 +89,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     RemoveSelf();
 
             } else {
-                if (behavior == SwitchGateBehavior.Crush)
+                if (Behavior == SwitchGateBehavior.Crush)
                     Add(new Coroutine(CrushSequence(node)));
                 else
                     Add(new Coroutine(ShatterSequence()));
@@ -139,7 +121,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Switch.SetLevelFlag(level);
             }
 
-            openSfx.Play("event:/game/general/fallblock_shake");
+            openSfx.Play(SFX.game_gen_fallblock_shake);
 
             yield return 0.1f;
             StartShaking(0.5f);
@@ -157,8 +139,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             openSfx.Stop();
-            Audio.Play("event:/game/general/wall_break_stone", Center);
-            Audio.Play("event:/game/general/touchswitch_gate_finish", Center);
+            Audio.Play(SFX.game_gen_wallbreak_stone, Center);
+            Audio.Play(SFX.game_gen_touchswitch_gate_finish, Center);
             level.Shake();
 
             for (int i = 0; i < Width / 8f; i++) {
@@ -188,7 +170,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             yield return 0.1f;
             StartShaking(0.5f);
-            openSfx.Play("event:/game/general/touchswitch_gate_open");
+            openSfx.Play(SFX.game_gen_touchswitch_gate_open);
 
             while (icon.Rate < 1f) {
                 icon.Color = Color.Lerp(inactiveColor, activeColor, icon.Rate);
@@ -268,7 +250,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             Collidable = collidable;
-            Audio.Play("event:/game/general/touchswitch_gate_finish", Position);
+            Audio.Play(SFX.game_gen_touchswitch_gate_finish, Position);
             openSfx.Stop();
             StartShaking(0.2f);
             level.Shake();

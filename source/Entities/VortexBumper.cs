@@ -5,7 +5,7 @@ using System;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/VortexCustomBumper")]
-    class VortexBumper : Entity {
+    public class VortexBumper : Entity {
         private Sprite sprite;
         private Sprite spriteEvil;
 
@@ -138,7 +138,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         spriteEvil.Visible = fireMode;
                         sprite.Visible = !fireMode;
                     }
-                    Audio.Play("event:/game/06_reflection/pinballbumper_reset", Position);
+                    Audio.Play(SFX.game_06_pinballbumper_reset, Position);
                 }
             }
             else if (Scene.OnInterval(0.05f)) {
@@ -159,13 +159,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     Vector2 vector = (player.Center - Center).SafeNormalize();
                     hitDir = -vector;
                     hitWiggler.Start();
-                    Audio.Play("event:/game/09_core/hotpinball_activate", Position);
+                    Audio.Play(SFX.game_09_hotpinball_activate, Position);
                     respawnTimer = 0.6f;
                     player.Die(vector);
                     level.Particles.Emit(Bumper.P_FireHit, 12, Center + vector * 12f, Vector2.One * 3f, vector.Angle());
                 }
             } else if (respawnTimer <= 0f) {
-                Audio.Play("event:/game/06_reflection/pinballbumper_hit", Position);
+                Audio.Play(SFX.game_06_pinballbumper_hit, Position);
                 respawnTimer = 0.6f;
                 Vector2 vector2 = player.ExplodeLaunch(Position, snapUp: false, sidesOnly: false);
 

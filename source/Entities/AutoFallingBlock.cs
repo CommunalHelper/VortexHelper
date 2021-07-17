@@ -7,7 +7,7 @@ using System.Collections;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/AutoFallingBlock")]
     [Tracked]
-    class AutoFallingBlock : Solid {
+    public class AutoFallingBlock : Solid {
 
         private TileGrid tiles;
         private char TileType;
@@ -121,13 +121,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private void ImpactSfx() {
             if (TileType == '3') {
-                Audio.Play("event:/game/01_forsaken_city/fallblock_ice_impact", BottomCenter);
+                Audio.Play(SFX.game_01_fallingblock_ice_impact, BottomCenter);
             } else if (TileType == '9') {
-                Audio.Play("event:/game/03_resort/fallblock_wood_impact", BottomCenter);
+                Audio.Play(SFX.game_03_fallingblock_wood_impact, BottomCenter);
             } else if (TileType == 'g') {
-                Audio.Play("event:/game/06_reflection/fallblock_boss_impact", BottomCenter);
+                Audio.Play(SFX.game_06_fallingblock_boss_impact, BottomCenter);
             } else {
-                Audio.Play("event:/game/general/fallblock_impact", BottomCenter);
+                Audio.Play(SFX.game_gen_fallblock_impact, BottomCenter);
             }
         }
     }

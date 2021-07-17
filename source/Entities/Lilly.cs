@@ -5,11 +5,10 @@ using Monocle;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using VortexHelper;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/Lilly")]
-    class Lilly : Solid {
+    public class Lilly : Solid {
 
         private class LillyArmEnd : Solid {
             public Vector2 startPosition;

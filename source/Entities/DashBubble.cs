@@ -6,7 +6,7 @@ using System;
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/DashBubble")]
     [Tracked(false)]
-    class DashBubble : Entity {
+    public class DashBubble : Entity {
         private const float RespawnTime = 3f;
 
         private Image sprite;
@@ -70,7 +70,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Collidable = true;
                 sprite.Visible = true;
                 sizeWiggle.Start();
-                Audio.Play("event:/game/04_cliffside/greenbooster_reappear", Position);
+                Audio.Play(SFX.game_04_greenbooster_reappear, Position);
             }
         }
 
@@ -83,7 +83,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 player.Dashes = dashes;
                 player.Stamina = stamina;
 
-                Audio.Play("event:/game/06_reflection/feather_bubble_bounce", Position);
+                Audio.Play(SFX.game_06_feather_bubble_bounce, Position);
                 Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
 
                 moveWiggle.Start();
@@ -98,7 +98,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             // dashed into
-            Audio.Play("event:/game/05_mirror_temple/redbooster_end");
+            Audio.Play(SFX.game_05_redbooster_end);
             sprite.Visible = false;
             Collidable = false;
             Celeste.Freeze(0.05f);

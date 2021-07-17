@@ -1,11 +1,10 @@
 ﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
-using VortexHelper;
 
 namespace Celeste.Mod.VortexHelper.Triggers {
     [CustomEntity("VortexHelper/KillLightningTrigger")]
-    class KillLightningTrigger : Trigger {
+    public class KillLightningTrigger : Trigger {
         private bool permanent;
 
         public KillLightningTrigger(EntityData data, Vector2 offset)
@@ -15,7 +14,7 @@ namespace Celeste.Mod.VortexHelper.Triggers {
 
         public override void Awake(Scene scene) {
             base.Awake(scene);
-            if (permanent && (base.Scene as Level).Session.GetFlag("disable_lightning")) {
+            if (permanent && (Scene as Level).Session.GetFlag("disable_lightning")) {
                 RemoveSelf();
             }
         }
@@ -28,13 +27,13 @@ namespace Celeste.Mod.VortexHelper.Triggers {
         }
 
         private void Break() {
-            Session session = (base.Scene as Level).Session;
+            Session session = (Scene as Level).Session;
             if (permanent) {
                 session.SetFlag("disable_lightning");
             }
-            RumbleTrigger.ManuallyTrigger(base.Center.X, 1.2f);
-            base.Tag = Tags.Persistent;
-            Add(new Coroutine(Lightning.RemoveRoutine(SceneAs<Level>(), base.RemoveSelf)));
+            RumbleTrigger.ManuallyTrigger(Center.X, 1.2f);
+            Tag = Tags.Persistent;
+            Add(new Coroutine(Lightning.RemoveRoutine(SceneAs<Level>(), RemoveSelf)));
         }
     }
 }
