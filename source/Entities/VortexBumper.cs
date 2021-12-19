@@ -35,9 +35,9 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private bool wobble;
 
         public VortexBumper(EntityData data, Vector2 offset)
-            : this(data.Position + offset, data.FirstNodeNullable(offset), data.Attr("style", "Green"), data.Bool("notCoreMore"), data.Bool("wobble", true)) { }
+            : this(data.Position + offset, data.FirstNodeNullable(offset), data.Attr("style", "Green"), data.Bool("notCoreMore"), data.Bool("wobble", true), data.Attr("sprite").Trim().TrimEnd('/')) { }
 
-        public VortexBumper(Vector2 position, Vector2? node, string style, bool notCoreMode, bool wobble)
+        public VortexBumper(Vector2 position, Vector2? node, string style, bool notCoreMode, bool wobble, string customSpritePath)
             : base(position) {
             Collider = new Circle(12f);
             Add(new PlayerCollider(OnPlayer));
@@ -45,16 +45,19 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Add(sine = new SineWave(0.44f, 0f).Randomize());
             this.wobble = wobble;
 
+            if (!string.IsNullOrEmpty(customSpritePath))
+                sprite = BuildCustomSprite(customSpritePath, style.ToLower());
+
             switch (style) {
                 default:
                 case "Green":
-                    sprite = VortexHelperModule.VortexBumperSpriteBank.Create("greenBumper");
+                    sprite ??= VortexHelperModule.VortexBumperSpriteBank.Create("greenBumper");
                     twoDashes = true;
                     p_ambiance = P_GreenAmbience;
                     p_launch = P_GreenLaunch;
                     break;
                 case "Orange":
-                    sprite = VortexHelperModule.VortexBumperSpriteBank.Create("orangeBumper");
+                    sprite ??= VortexHelperModule.VortexBumperSpriteBank.Create("orangeBumper");
                     oneUse = true;
                     p_ambiance = P_OrangeAmbience;
                     p_launch = P_OrangeLaunch;
@@ -97,6 +100,26 @@ namespace Celeste.Mod.VortexHelper.Entities {
             if (!notCoreMode) {
                 Add(new CoreModeListener(OnChangeMode));
             }
+        }
+
+        private static Sprite BuildCustomSprite(string path, string name) {
+            Sprite sprite = new Sprite(GFX.Game, path + "/");
+
+            // <Anim id="on" path=name frames="42-44" delay="0.06" goto="idle"/>
+            sprite.Add("on", name, 0.06f, "idle", 42, 43, 44);
+            
+            // <Loop id="idle" path=name frames="0-33" delay="0.06"/>
+            sprite.AddLoop("idle", name, 0.06f, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33); // yes
+            
+            // <Anim id="hit" path=name frames="34-42" delay="0.06" goto="off"/>
+            sprite.Add("hit", name, 0.06f, "off", 34, 35, 36, 37, 38, 39, 40, 41, 42);
+            
+            // <Loop id="off" path=name frames="42" delay="0.06"/>
+            sprite.AddLoop("off", name, 0.06f, 42);
+
+            sprite.JustifyOrigin(0.5f, 0.5f);
+            sprite.Play("idle");
+            return sprite;
         }
 
         public override void Added(Scene scene) {

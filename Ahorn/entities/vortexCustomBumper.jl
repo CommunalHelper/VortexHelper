@@ -7,7 +7,8 @@ styles_options = String["Green", "Orange"]
 									x::Integer, y::Integer, 
 									style::String="Green",
 									nodes::Array{Tuple{Integer, Integer}, 1}=Tuple{Integer, Integer}[],
-									notCoreMore::Bool = false, wobble::Bool = true)
+									notCoreMore::Bool=false, wobble::Bool=true,
+                                    sprite::String="")
 
 const placements = Ahorn.PlacementDict(
     "Bumper ($style) (Vortex Helper)" => Ahorn.EntityPlacement(
