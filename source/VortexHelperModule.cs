@@ -60,6 +60,7 @@ namespace Celeste.Mod.VortexHelper {
             LavenderBooster.Hooks.Hook();
             BowlPuffer.Hooks.Hook();
             PufferBarrierRenderer.Hooks.Hook();
+            StaticMoverWithLiftSpeed.Hooks.Hook();
             MiscHooks.Hook();
         }
 
@@ -71,6 +72,7 @@ namespace Celeste.Mod.VortexHelper {
             LavenderBooster.Hooks.Unhook();
             BowlPuffer.Hooks.Unhook();
             PufferBarrierRenderer.Hooks.Unhook();
+            StaticMoverWithLiftSpeed.Hooks.Unhook();
             MiscHooks.Unhook();
         }
 
