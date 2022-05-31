@@ -1,4 +1,5 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.VortexHelper.Misc;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
@@ -39,12 +40,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
             };
 
-            Add(new StaticMover {
+            Add(new StaticMoverWithLiftSpeed {
                 OnMove = OnMove,
                 OnShake = OnShake,
                 SolidChecker = IsRiding,
                 OnEnable = OnEnable,
-                OnDisable = OnDisable
+                OnDisable = OnDisable,
+                OnSetLiftSpeed = OnSetLiftSpeed
             });
         }
 
@@ -122,6 +124,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Position = position;
         }
 
+        private void OnSetLiftSpeed(Vector2 liftSpeed) {
+            LiftSpeed = liftSpeed;
+        }
+
         // Fix weird tp glitch with MoveBlocks
         private void OnMove(Vector2 amount) {
             float moveH = amount.X;
@@ -132,8 +138,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 MoveVNaive(moveV);
             }
             else {
-                MoveH(moveH);
-                MoveV(moveV);
+                MoveH(moveH, LiftSpeed.X);
+                MoveV(moveV, LiftSpeed.Y);
             }
 
         }
