@@ -1,0 +1,7 @@
+mods.VortexHelper.name=Vortex Helper
+
+# Bowl Puffer
+entities.VortexHelper/BowlPuffer.placements.name.normal=Bowl Puffer
+entities.VortexHelper/BowlPuffer.placements.name.no_respawn=Bowl Puffer (No Respawn)
+entities.VortexHelper/BowlPuffer.attributes.description.noRespawn=If ticked, the pufferfish will not respawn after it explodes until the room is reset.
+entities.VortexHelper/BowlPuffer.attributes.description.explodeTimer=The time, in seconds, before the pufferfish will explode after touching a Puffer Barrier. Set to 0 for an instant explosion.
