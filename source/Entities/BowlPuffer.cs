@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
+using System.Diagnostics;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/BowlPuffer")]
@@ -452,22 +453,16 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private bool CollidePufferBarrierCheck() {
-            bool res = false;
             foreach (PufferBarrier barrier in Scene.Tracker.GetEntities<PufferBarrier>()) {
                 barrier.Collidable = true;
-            }
-
-            PufferBarrier collided = CollideFirst<PufferBarrier>();
-            if (collided != null) {
-                collided.OnTouchPuffer();
-                res = true;
-            }
-
-            foreach (PufferBarrier barrier in Scene.Tracker.GetEntities<PufferBarrier>()) {
+                if (CollideCheck(barrier)) {
+                    barrier.OnTouchPuffer();
+                    barrier.Collidable = false;
+                    return true;
+                }
                 barrier.Collidable = false;
             }
-
-            return res;
+            return false;
         }
 
         private void PlayerThrowSelf(Player player) {
@@ -503,8 +498,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             Player entity = Scene.Tracker.GetEntity<Player>();
             if (entity == null) {
                 playerAliveFade = Calc.Approach(playerAliveFade, 0f, 1f * Engine.DeltaTime);
-            }
-            else {
+            } else {
                 playerAliveFade = Calc.Approach(playerAliveFade, 1f, 1f * Engine.DeltaTime);
                 lastPlayerPos = entity.Center;
             }
@@ -519,16 +513,19 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     }
                     hardVerticalHitSoundCooldown -= Engine.DeltaTime;
                     Depth = Depths.TheoCrystal;
-                    if (CollideCheck<Water>() && fused) {
-                        fused = false;
-                        Audio.Play(SFX.game_10_puffer_shrink, Position);
-                        puffer.Play("unalert");
-                    }
-                    if (CollidePufferBarrierCheck() && !fused) {
-                        fused = true;
-                        explodeTimeLeft = explodeTimer;
-                        Audio.Play(SFX.game_10_puffer_expand, Position);
-                        puffer.Play("alert");
+                    if (fused) {
+                        if (CollideCheck<Water>()) {
+                            fused = false;
+                            Audio.Play(SFX.game_10_puffer_shrink, Position);
+                            puffer.Play("unalert");
+                        }
+                    } else {
+                        if (CollidePufferBarrierCheck()) {
+                            fused = true;
+                            explodeTimeLeft = explodeTimer;
+                            Audio.Play(SFX.game_10_puffer_expand, Position);
+                            puffer.Play("alert");
+                        }
                     }
 
                     if (fused) {
@@ -564,17 +561,15 @@ namespace Celeste.Mod.VortexHelper.Entities {
                     if (Hold.IsHeld) {
                         prevLiftSpeed = Vector2.Zero;
                         noGravityTimer = 0f;
-                    }
-                    else {
+                    } else {
                         bool inWater = CollideCheck<Water>(Position + Vector2.UnitY * -8);
                         if (OnGround()) {
-                            float target = (!OnGround(Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(Position - Vector2.UnitX * 3f) ? 0f : (-20f));
+                            float target = ((!OnGround(Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(Position - Vector2.UnitX * 3f) ? 0f : (-20f)));
                             Speed.X = Calc.Approach(Speed.X, target, 800f * Engine.DeltaTime);
                             Vector2 liftSpeed = LiftSpeed;
                             if (liftSpeed == Vector2.Zero && prevLiftSpeed != Vector2.Zero) {
                                 Speed = prevLiftSpeed;
                                 prevLiftSpeed = Vector2.Zero;
-
                                 Speed.Y = Math.Min(Speed.Y * 0.6f, 0f);
                                 if (Speed.X != 0f && Speed.Y == 0f) {
                                     Speed.Y = -60f;
@@ -582,18 +577,15 @@ namespace Celeste.Mod.VortexHelper.Entities {
                                 if (Speed.Y < 0f) {
                                     noGravityTimer = 0.15f;
                                 }
-                            }
-                            else {
+                            } else {
                                 prevLiftSpeed = liftSpeed;
                                 if (liftSpeed.Y < 0f && Speed.Y < 0f) {
                                     Speed.Y = 0f;
                                 }
                             }
-                            if (inWater) {
+                            if (inWater)
                                 Speed.Y = Calc.Approach(Speed.Y, -30, 800f * Engine.DeltaTime * 0.8f);
-                            }
-                        }
-                        else if (Hold.ShouldHaveGravity) {
+                        } else if (Hold.ShouldHaveGravity) {
                             float num1 = 800f;
                             if (Math.Abs(Speed.Y) <= 30f) {
                                 num1 *= 0.5f;
@@ -610,6 +602,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                                 Speed.Y = Calc.Approach(Speed.Y, inWater ? -30f : 200f, num1 * Engine.DeltaTime * (inWater ? 0.7f : 1));
                             }
                         }
+
                         previousPosition = ExactPosition;
                         MoveH(Speed.X * Engine.DeltaTime, onCollideH);
                         MoveV(Speed.Y * Engine.DeltaTime, onCollideV);
@@ -618,16 +611,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                             if (Left - 8f > Level.Bounds.Right) {
                                 RemoveSelf();
                             }
-                        }
-                        else if (Left < Level.Bounds.Left) {
+                        } else if (Left < Level.Bounds.Left) {
                             Left = Level.Bounds.Left;
                             Speed.X *= -0.4f;
-                        }
-                        else if (Top < Level.Bounds.Top - 4) {
+                        } else if (Top < Level.Bounds.Top - 4) {
                             Top = Level.Bounds.Top + 4;
                             Speed.Y = 0f;
-                        }
-                        else if (Top > Level.Bounds.Bottom && !Level.Transitioning) {
+                        } else if (Top > Level.Bounds.Bottom && !Level.Transitioning) {
                             MoveV(-5);
                             Explode();
                             GotoGone();
