@@ -2,19 +2,24 @@
 #    placements.entities.entityName.tooltips.attr=Tooltip
 #    placements.triggers.triggerName.tooltips.attr=Tooltip
 
-# custom switch gate
-placements.entities.VortexHelper/VortexSwitchGate.tooltips.behavior=Which custom behavior the block should use once activated.\n- Crush: The block accelerates toward its node like an Intro Crusher.\n- Shatter: The block destroys itself on the spot.
-placements.entities.VortexHelper/VortexSwitchGate.tooltips.crushDuration=The length of time the block takes to reach its node in Crush mode, in seconds.
+# Attached Jump Thru
+placements.entities.VortexHelper/AttachedJumpThru.tooltips.texture=Changes the appearance of the platform.
+placements.entities.VortexHelper/AttachedJumpThru.tooltips.surfaceIndex=Footstep sound when walking on the platform.\nLeave at Default for game to decide automatically based on texture.
 
-# floor booster
+# Custom Switch Gate
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.sprite=Changes the visual appearance of the switch gate.
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.behavior=Which custom behavior the block should use once activated.\n- Crush: The block accelerates toward its node like an Intro Crusher.\n- Shatter: The block destroys itself on the spot.
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.crushDuration=The time the block takes to reach its node in Crush mode, in seconds.\nThis value is clamped between 0.5s and 2s.
+
+# Floor Booster
 placements.entities.VortexHelper/FloorBooster.tooltips.iceMode=Whether the Floor Booster should ignore the current Core mode and default to ice variant.
 placements.entities.VortexHelper/FloorBooster.tooltips.noRefillOnIce=Whether the ice variant should prevent dash refills when stood on.
 placements.entities.VortexHelper/FloorBooster.tooltips.notAttached=If ticked, the Floor Booster will forcibly not attach to moving platforms.
 
-# color switch
+# Color Switch
 placements.entities.VortexHelper/ColorSwitch.tooltips.random=If ticked, the switch will change to a random color after being hit, rather than cycling through the colors.
 
-# purple booster
+# Purple Booster
 placements.entities.VortexHelper/PurpleBooster.tooltips.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
 
 # Bowl Puffer

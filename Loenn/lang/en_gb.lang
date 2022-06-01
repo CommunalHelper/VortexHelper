@@ -1,7 +1,60 @@
 mods.VortexHelper.name=Vortex Helper
 
+# Attached Jump Thru
+entities.VortexHelper/AttachedJumpThru.placements.name.wood=Attached Jump Through (Wood)
+entities.VortexHelper/AttachedJumpThru.placements.name.dream=Attached Jump Through (Dream)
+entities.VortexHelper/AttachedJumpThru.placements.name.temple=Attached Jump Through (Temple)
+entities.VortexHelper/AttachedJumpThru.placements.name.templeB=Attached Jump Through (Temple B)
+entities.VortexHelper/AttachedJumpThru.placements.name.cliffside=Attached Jump Through (Cliffside)
+entities.VortexHelper/AttachedJumpThru.placements.name.reflection=Attached Jump Through (Reflection)
+entities.VortexHelper/AttachedJumpThru.placements.name.core=Attached Jump Through (Core)
+entities.VortexHelper/AttachedJumpThru.placements.name.moon=Attached Jump Through (Moon)
+entities.VortexHelper/AttachedJumpThru.attributes.description.texture=Changes the appearance of the platform.
+entities.VortexHelper/AttachedJumpThru.attributes.description.surfaceIndex=Footstep sound when walking on the platform.\nLeave at Default for game to decide automatically based on texture.
+
+# Auto Falling block
+entities.VortexHelper/AutoFallingBlock.placements.name.auto_falling_block=Auto Falling Block
+entities.VortexHelper/AutoFallingBlock.attributes.description.tiletype=Changes the visual appearance of the falling block.
+
 # Bowl Puffer
 entities.VortexHelper/BowlPuffer.placements.name.normal=Bowl Puffer
 entities.VortexHelper/BowlPuffer.placements.name.no_respawn=Bowl Puffer (No Respawn)
 entities.VortexHelper/BowlPuffer.attributes.description.noRespawn=If ticked, the pufferfish will not respawn after it explodes until the room is reset.
 entities.VortexHelper/BowlPuffer.attributes.description.explodeTimer=The time, in seconds, before the pufferfish will explode after touching a Puffer Barrier. Set to 0 for an instant explosion.
+
+# Bubble Wrap Block
+entities.VortexHelper/BubbleWrapBlock.placements.name.bubble_wrap_block=Respawning Dash Block
+entities.VortexHelper/BubbleWrapBlock.attributes.description.canDash=Whether the player is able to break this block by dashing into it.
+entities.VortexHelper/BubbleWrapBlock.attributes.description.respawnTime=The time in seconds that this block takes to respawn after breaking. 
+
+# Color Switch
+entities.VortexHelper/ColorSwitch.placements.name.all_cycle=Color Switch (All, Cycle)
+entities.VortexHelper/ColorSwitch.placements.name.all_random=Color Switch (All, Random)
+entities.VortexHelper/ColorSwitch.attributes.description.blue=Enables switch to BLUE through this Color Switch.
+entities.VortexHelper/ColorSwitch.attributes.description.rose=Enables switch to ROSE through this Color Switch.
+entities.VortexHelper/ColorSwitch.attributes.description.orange=Enables switch to ORANGE through this Color Switch.
+entities.VortexHelper/ColorSwitch.attributes.description.lime=Enables switch to LIME through this Color Switch.
+entities.VortexHelper/ColorSwitch.attributes.description.random=Makes this Color Switch randomly pick one of its enabled colors.
+
+# Vortex Switch Gate
+entities.VortexHelper/VortexSwitchGate.placements.name.crush=Custom Switch Gate (Crush)
+entities.VortexHelper/VortexSwitchGate.placements.name.shatter=Custom Switch Gate (Shatter)
+entities.VortexHelper/VortexSwitchGate.attributes.description.sprite=Changes the visual appearance of the switch gate.
+entities.VortexHelper/VortexSwitchGate.attributes.description.behavior=Which custom behavior the block should use once activated.\n- Crush: The block accelerates toward its node like an Intro Crusher.\n- Shatter: The block destroys itself on the spot.
+entities.VortexHelper/VortexSwitchGate.attributes.description.crushDuration=The time the block takes to reach its node in Crush mode, in seconds.\nThis value is clamped between 0.5s and 2s.
+
+# Dash Bubble
+entities.VortexHelper/DashBubble.placements.name.normal=Dash Bubble
+entities.VortexHelper/DashBubble.placements.name.spiked=Dash Bubble (Spiked)
+entities.VortexHelper/DashBubble.attributes.description.spiked=Adds spikes to the edge of this bubble, which kill the player if it isn't dashing.
+entities.VortexHelper/DashBubble.attributes.description.singleUse=Makes this bubble usable only once.
+entities.VortexHelper/DashBubble.attributes.description.wobble=Allows this bubble to wobble around its position, and to react to the player bouncing on it.
+
+# Floor Booster
+entities.VortexHelper/FloorBooster.placements.name.right=Floor Booster (Right)
+entities.VortexHelper/FloorBooster.placements.name.left=Floor Booster (Left)
+entities.VortexHelper/FloorBooster.attributes.description.left=Makes this Floor Booster push towards the left.
+entities.VortexHelper/FloorBooster.attributes.description.iceMode=Whether the Floor Booster should ignore the current Core mode and default to ice variant.
+entities.VortexHelper/FloorBooster.attributes.description.speed=The speed of this Floor Booster.
+entities.VortexHelper/FloorBooster.attributes.description.noRefillOnIce=Whether the ice variant should prevent dash refills when stood on.
+entities.VortexHelper/FloorBooster.attributes.description.notAttached=If ticked, the Floor Booster will forcibly not attach to moving platforms.

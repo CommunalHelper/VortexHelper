@@ -10,15 +10,15 @@ bowlPuffer.placements = {
         name = "normal",
         data = {
             noRespawn = false,
-            explodeTimer = 1.0,
-        },
+            explodeTimer = 1.0
+        }
     },
     {
         name = "no_respawn",
         data = {
             noRespawn = true,
-            explodeTimer = 1.0,
-        },
+            explodeTimer = 1.0
+        }
     }
 }
 
