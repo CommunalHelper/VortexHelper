@@ -2,12 +2,10 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
-using System.Diagnostics;
 
 namespace Celeste.Mod.VortexHelper.Entities {
     [CustomEntity("VortexHelper/BowlPuffer")]
     public class BowlPuffer : Actor {
-
         [Tracked(false)]
         public class BowlPufferCollider : Component {
             public Action<BowlPuffer, Spring> OnCollide;
@@ -42,12 +40,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private States state = States.Crystal;
         private Facings facing = Facings.Right;
 
-        private bool noRespawn;
+        private readonly bool noRespawn;
 
         // Uses three sprites so that we can play the vanilla puffer animations without extra sprite work.
-        private Sprite pufferBowlBottom, puffer, pufferBowlTop;
+        private readonly Sprite pufferBowlBottom, puffer, pufferBowlTop;
 
-        private Vector2 startPosition;
+        private readonly Vector2 startPosition;
+
         private SimpleCurve returnCurve;
         private float goneTimer;
         private float eyeSpin;
@@ -64,7 +63,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
         private float explodeTimeLeft;
         private bool fused = false;
 
-        private float playerAliveFade;
         private Vector2 lastPlayerPos;
 
         private Wiggler inflateWiggler;
@@ -76,8 +74,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private Level Level;
         private Holdable Hold;
-        private Collision onCollideH;
-        private Collision onCollideV;
+        private Collision onCollideH, onCollideV;
         private HoldableCollider hitSeeker;
 
         private float hardVerticalHitSoundCooldown;
@@ -115,18 +112,20 @@ namespace Celeste.Mod.VortexHelper.Entities {
             inflateWiggler = Wiggler.Create(0.6f, 2f);
             Add(inflateWiggler);
 
-            Add(Hold = new Holdable(0.1f));
-            Hold.PickupCollider = new Hitbox(21f, 17f, -11f, -17f);
-            Hold.SlowFall = false;
-            Hold.SlowRun = true;
-            Hold.OnPickup = OnPickup;
-            Hold.OnRelease = OnRelease;
-            Hold.DangerousCheck = Dangerous;
-            Hold.OnHitSeeker = HitSeeker;
-            Hold.OnSwat = Swat;
-            Hold.OnHitSpring = HitSpring;
-            Hold.OnHitSpinner = HitSpinner;
-            Hold.SpeedGetter = () => Speed;
+            Add(Hold = new Holdable(0.1f) {
+                PickupCollider = new Hitbox(21f, 17f, -11f, -17f),
+                SlowFall = false,
+                SlowRun = true,
+                OnPickup = OnPickup,
+                OnRelease = OnRelease,
+                DangerousCheck = Dangerous,
+                OnHitSeeker = HitSeeker,
+                OnSwat = Swat,
+                OnHitSpring = HitSpring,
+                OnHitSpinner = HitSpinner,
+                SpeedGetter = () => Speed,
+            });
+
             onCollideH = OnCollideH;
             onCollideV = OnCollideV;
 
@@ -511,12 +510,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 shatterTimer -= 1.5f * Engine.DeltaTime;
 
             Player player = Scene.Tracker.GetEntity<Player>();
-            if (player == null) {
-                playerAliveFade = Calc.Approach(playerAliveFade, 0, Engine.DeltaTime);
-            } else {
-                playerAliveFade = Calc.Approach(playerAliveFade, 1, Engine.DeltaTime);
                 lastPlayerPos = player.Center;
-            }
 
             switch (state) {
                 default:
@@ -580,7 +574,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
                         bool inWater = CollideCheck<Water>(Position + Vector2.UnitY * -8);
 
                         if (OnGround()) {
-
                             float target = (!OnGround(Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(Position - Vector2.UnitX * 3f) ? 0f : (-20f));
                             Speed.X = Calc.Approach(Speed.X, target, 800f * Engine.DeltaTime);
 
@@ -639,16 +632,18 @@ namespace Celeste.Mod.VortexHelper.Entities {
                                 MoveH(32f * Engine.DeltaTime);
                         }
 
-                        TempleGate templeGate = CollideFirst<TempleGate>();
-                        if (templeGate != null && player != null) {
-                            templeGate.Collidable = false;
-                            MoveH(Math.Sign(player.X - X) * 32 * Engine.DeltaTime);
-                            templeGate.Collidable = true;
+                        if (player is not null) {
+                            TempleGate templeGate = CollideFirst<TempleGate>();
+                            if (templeGate is not null) {
+                                templeGate.Collidable = false;
+                                MoveH(Math.Sign(player.X - X) * 32 * Engine.DeltaTime);
+                                templeGate.Collidable = true;
+                            }
                         }
                     }
 
                     Hold.CheckAgainstColliders();
-                    if (hitSeeker != null && swatTimer <= 0f && !hitSeeker.Check(Hold))
+                    if (hitSeeker is not null && swatTimer <= 0f && !hitSeeker.Check(Hold))
                         hitSeeker = null;
                     break;
                 }
@@ -685,16 +680,17 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
             base.Render();
             if (puffer.CurrentAnimationID == "alerted") {
-                Vector2 vector3 = Position + (new Vector2(3f, -4) * puffer.Scale);
-                vector3.X -= facing == Facings.Left ? 9 : 0;
+                Vector2 pos = Position + (new Vector2(3f, -4) * puffer.Scale);
+                pos.X -= facing == Facings.Left ? 9 : 0;
+
                 Vector2 to = lastPlayerPos + new Vector2(0f, -4f);
-                Vector2 vector4 = Calc.AngleToVector(Calc.Angle(vector3, to) + eyeSpin * ((float)Math.PI * 2f) * 2f, 1f);
-                Vector2 vector5 = vector3 + new Vector2((float)Math.Round(vector4.X), (float)Math.Round(Calc.ClampedMap(vector4.Y, -1f, 1f, -1f, 2f)));
-                vector5.Y -= 10;
-                Draw.Point(vector5 + new Vector2(-1, 1), Color.Black);
+                Vector2 eyeOffset = Calc.AngleToVector(Calc.Angle(pos, to) + eyeSpin * ((float)Math.PI * 2f) * 2f, 1f);
+                Vector2 eyePos = pos + new Vector2((float)Math.Round(eyeOffset.X) - 1, (float)Math.Round(Calc.ClampedMap(eyeOffset.Y, -1f, 1f, -1f, 2f)) - 9);
+
+                Draw.Point(eyePos, Color.Black);
             }
 
-            if (fused && explodeTimer != 0.0f) {
+            if (fused && explodeTimer != 0) {
                 float r = explodeTimeLeft / explodeTimer;
                 for (float a = 0f; a < Math.PI * 2 * r; a += 0.06f) {
                     Vector2 p = Center + new Vector2((float)Math.Sin(a), -(float)Math.Cos(a)) * 16 - Vector2.UnitY * 5 - Vector2.UnitX;
