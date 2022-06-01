@@ -65,16 +65,17 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         private Vector2 lastPlayerPos;
 
-        private Wiggler inflateWiggler;
+        private readonly Wiggler inflateWiggler;
         private Vector2 scale;
 
         private bool exploded = false;
 
-        private Circle pushRadius;
+        private readonly Circle pushRadius;
 
         private Level Level;
-        private Holdable Hold;
-        private Collision onCollideH, onCollideV;
+
+        private readonly Holdable Hold;
+        private readonly Collision onCollideH, onCollideV;
         private HoldableCollider hitSeeker;
 
         private float hardVerticalHitSoundCooldown;
