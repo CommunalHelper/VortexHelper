@@ -9,7 +9,7 @@ floorBooster.canResize = {true, false}
 
 floorBooster.fieldInformation = {
     speed = {
-        minimumValue = 0
+        minimumValue = 0.0
     }
 }
 

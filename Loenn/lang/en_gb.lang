@@ -58,3 +58,40 @@ entities.VortexHelper/FloorBooster.attributes.description.iceMode=Whether the Fl
 entities.VortexHelper/FloorBooster.attributes.description.speed=The speed of this Floor Booster.
 entities.VortexHelper/FloorBooster.attributes.description.noRefillOnIce=Whether the ice variant should prevent dash refills when stood on.
 entities.VortexHelper/FloorBooster.attributes.description.notAttached=If ticked, the Floor Booster will forcibly not attach to moving platforms.
+
+# Lilly
+entities.VortexHelper/Lilly.placements.name.lilly=Lilly
+entities.VortexHelper/Lilly.attributes.description.maxLength=The maximum distance at which this Lilly's arms can extend.
+
+# Puffer Barrier
+entities.VortexHelper/PufferBarrier.placements.name.puffer_barrier=Puffer Barrier
+
+# Purple Booster
+entities.VortexHelper/PurpleBooster.placements.name.purple=Booster (Purple)
+entities.VortexHelper/PurpleBooster.placements.name.lavender=Booster (Lavender)
+entities.VortexHelper/PurpleBooster.attributes.description.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
+
+# Switch Block
+entities.VortexHelper/SwitchBlock.placements.name.switch_block_0=Switch Block (0 - Blue)
+entities.VortexHelper/SwitchBlock.placements.name.switch_block_1=Switch Block (1 - Rose)
+entities.VortexHelper/SwitchBlock.placements.name.switch_block_2=Switch Block (2 - Orange)
+entities.VortexHelper/SwitchBlock.placements.name.switch_block_3=Switch Block (3 - Lime)
+entities.VortexHelper/SwitchBlock.attributes.description.index=Changes the index and color of this Switch Block.
+
+# Vortex Custom Bumper
+entities.VortexHelper/VortexCustomBumper.placements.name.green=Bumper (Green)
+entities.VortexHelper/VortexCustomBumper.placements.name.orange=Bumper (Orange)
+entities.VortexHelper/VortexCustomBumper.attributes.description.style=Alters the behavior and look of this bumper.\n-Green: Gives the player two dashes. Alternates between green bumper and deadly orange bumper with the current Core Mode.\n-Orange: Turns into a spiky bumper which kills the player, essentially making itself one use. 
+entities.VortexHelper/VortexCustomBumper.attributes.description.notCoreMode=Whether this bumper's style should remain the same, independently of the current Core Mode.
+entities.VortexHelper/VortexCustomBumper.attributes.description.wobble=Allows this bumper to wobble around and react to the player bouncing on it.
+entities.VortexHelper/VortexCustomBumper.attributes.description.sprite=Custom sprite path for this bumper that leads to custom frames.\nThe frame count must match the one from the original skin, and the files need to have this bumper's style as their name (all lowercase), + the frame index.\nFor instance: green00.png, green01.png, green02.png, etc... given that this bumper uses the green style.\nThe sprites must be located somewhere in the Gameplay atlas (somewhere in Graphics/Atlases/Gameplay/).\n\nExemple: objects/myMap/myCustomBumper\n..should be valid if there exists files whose paths are Graphics/Atlases/Gameplay/objects/myMap/myCustomBumper/<style>00.png, etc... (<style> is this bumper's style).
+
+# Color Switch Trigger
+triggers.VortexHelper/ColorSwitchTrigger.placements.name.color_switch_trigger=Color Switch Trigger
+triggers.VortexHelper/ColorSwitchTrigger.attributes.description.index=The target index (color) to switch to.
+triggers.VortexHelper/ColorSwitchTrigger.attributes.description.oneUse=Makes this trigger remove itself after being used.
+triggers.VortexHelper/ColorSwitchTrigger.attributes.description.silent=Turns off any sound made by this trigger.
+
+# Kill Lightning Trigger
+triggers.VortexHelper/KillLightningTrigger.placements.name.kill_lightning_trigger=Kill Lightning Trigger
+triggers.VortexHelper/KillLightningTrigger.attributes.description.permanent=Kills all the lightning in the current level permanently. Makes this trigger one use only.

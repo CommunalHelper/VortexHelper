@@ -6,6 +6,12 @@ bubbleWrapBlock.name = "VortexHelper/BubbleWrapBlock"
 bubbleWrapBlock.resizable = {true, true}
 bubbleWrapBlock.minimumSize = {16, 16}
 
+bubbleWrapBlock.fieldInformation = {
+    respawnTime = {
+        minimumValue = 0.0
+    }
+}
+
 bubbleWrapBlock.placements = {
     {
         name = "bubble_wrap_block",

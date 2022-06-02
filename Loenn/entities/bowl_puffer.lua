@@ -5,6 +5,12 @@ local bowlPuffer = {}
 bowlPuffer.name = "VortexHelper/BowlPuffer"
 bowlPuffer.depth = 100
 
+bowlPuffer.fieldInformation = {
+    explodeTimer = {
+        minimumValue = 0.0
+    }
+}
+
 bowlPuffer.placements = {
     {
         name = "normal",
