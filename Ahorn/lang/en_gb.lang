@@ -6,22 +6,63 @@
 placements.entities.VortexHelper/AttachedJumpThru.tooltips.texture=Changes the appearance of the platform.
 placements.entities.VortexHelper/AttachedJumpThru.tooltips.surfaceIndex=Footstep sound when walking on the platform.\nLeave at Default for game to decide automatically based on texture.
 
-# Custom Switch Gate
-placements.entities.VortexHelper/VortexSwitchGate.tooltips.sprite=Changes the visual appearance of the switch gate.
-placements.entities.VortexHelper/VortexSwitchGate.tooltips.behavior=Which custom behavior the block should use once activated.\n- Crush: The block accelerates toward its node like an Intro Crusher.\n- Shatter: The block destroys itself on the spot.
-placements.entities.VortexHelper/VortexSwitchGate.tooltips.crushDuration=The time the block takes to reach its node in Crush mode, in seconds.\nThis value is clamped between 0.5s and 2s.
-
-# Floor Booster
-placements.entities.VortexHelper/FloorBooster.tooltips.iceMode=Whether the Floor Booster should ignore the current Core mode and default to ice variant.
-placements.entities.VortexHelper/FloorBooster.tooltips.noRefillOnIce=Whether the ice variant should prevent dash refills when stood on.
-placements.entities.VortexHelper/FloorBooster.tooltips.notAttached=If ticked, the Floor Booster will forcibly not attach to moving platforms.
-
-# Color Switch
-placements.entities.VortexHelper/ColorSwitch.tooltips.random=If ticked, the switch will change to a random color after being hit, rather than cycling through the colors.
-
-# Purple Booster
-placements.entities.VortexHelper/PurpleBooster.tooltips.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
+# Auto Falling block
+placements.entities.VortexHelper/AutoFallingBlock.tooltips.tiletype=Changes the visual appearance of the falling block.
 
 # Bowl Puffer
 placements.entities.VortexHelper/BowlPuffer.tooltips.noRespawn=If ticked, the pufferfish will not respawn after it explodes until the room is reset.
 placements.entities.VortexHelper/BowlPuffer.tooltips.explodeTimer=The time, in seconds, before the pufferfish will explode after touching a Puffer Barrier. Set to 0 for an instant explosion.
+
+# Bubble Wrap Block
+placements.entities.VortexHelper/BubbleWrapBlock.tooltips.canDash=Whether the player is able to break this block by dashing into it.
+placements.entities.VortexHelper/BubbleWrapBlock.tooltips.respawnTime=The time in seconds that this block takes to respawn after breaking. 
+
+# Color Switch
+placements.entities.VortexHelper/ColorSwitch.tooltips.blue=Enables switch to BLUE through this Color Switch.
+placements.entities.VortexHelper/ColorSwitch.tooltips.rose=Enables switch to ROSE through this Color Switch.
+placements.entities.VortexHelper/ColorSwitch.tooltips.orange=Enables switch to ORANGE through this Color Switch.
+placements.entities.VortexHelper/ColorSwitch.tooltips.lime=Enables switch to LIME through this Color Switch.
+placements.entities.VortexHelper/ColorSwitch.tooltips.random=Makes this Color Switch randomly pick one of its enabled colors.
+
+# Vortex Switch Gate
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.sprite=Changes the visual appearance of the switch gate.
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.behavior=Which custom behavior the block should use once activated.\n- Crush: The block accelerates toward its node like an Intro Crusher.\n- Shatter: The block destroys itself on the spot.
+placements.entities.VortexHelper/VortexSwitchGate.tooltips.crushDuration=The time the block takes to reach its node in Crush mode, in seconds.\nThis value is clamped between 0.5s and 2s.
+
+# Dash Bubble
+placements.entities.VortexHelper/DashBubble.tooltips.spiked=Adds spikes to the edge of this bubble, which kill the player if it isn't dashing.
+placements.entities.VortexHelper/DashBubble.tooltips.singleUse=Makes this bubble usable only once.
+placements.entities.VortexHelper/DashBubble.tooltips.wobble=Allows this bubble to wobble around its position, and to react to the player bouncing on it.
+
+# Floor Booster
+placements.entities.VortexHelper/FloorBooster.tooltips.left=Makes this Floor Booster push towards the left.
+placements.entities.VortexHelper/FloorBooster.tooltips.iceMode=Whether the Floor Booster should ignore the current Core mode and default to ice variant.
+placements.entities.VortexHelper/FloorBooster.tooltips.speed=The speed of this Floor Booster.
+placements.entities.VortexHelper/FloorBooster.tooltips.noRefillOnIce=Whether the ice variant should prevent dash refills when stood on.
+placements.entities.VortexHelper/FloorBooster.tooltips.notAttached=If ticked, the Floor Booster will forcibly not attach to moving platforms.
+
+# Lilly
+placements.entities.VortexHelper/Lilly.tooltips.maxLength=The maximum distance at which this Lilly's arms can extend.
+
+# Puffer Barrier
+# --- NONE ---
+
+# Purple Booster
+placements.entities.VortexHelper/PurpleBooster.tooltips.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
+
+# Switch Block
+placements.entities.VortexHelper/SwitchBlock.tooltips.index=Changes the index and color of this Switch Block.
+
+# Vortex Custom Bumper
+placements.entities.VortexHelper/VortexCustomBumper.tooltips.style=Alters the behavior and look of this bumper.\n-Green: Gives the player two dashes. Alternates between green bumper and deadly orange bumper with the current Core Mode.\n-Orange: Turns into a spiky bumper which kills the player, essentially making itself one use. 
+placements.entities.VortexHelper/VortexCustomBumper.tooltips.notCoreMode=Whether this bumper's style should remain the same, independently of the current Core Mode.
+placements.entities.VortexHelper/VortexCustomBumper.tooltips.wobble=Allows this bumper to wobble around and react to the player bouncing on it.
+placements.entities.VortexHelper/VortexCustomBumper.tooltips.sprite=Custom sprite path for this bumper that leads to custom frames.\nThe frame count must match the one from the original skin, and the files need to have this bumper's style as their name (all lowercase), + the frame index.\nFor instance: green00.png, green01.png, green02.png, etc... given that this bumper uses the green style.\nThe sprites must be located somewhere in the Gameplay atlas (somewhere in Graphics/Atlases/Gameplay/).\n\nExemple: objects/myMap/myCustomBumper\n..should be valid if there exists files whose paths are Graphics/Atlases/Gameplay/objects/myMap/myCustomBumper/<style>00.png, etc... (<style> is this bumper's style).
+
+# Color Switch Trigger
+placements.triggers.VortexHelper/ColorSwitchTrigger.tooltips.index=The target index (color) to switch to.
+placements.triggers.VortexHelper/ColorSwitchTrigger.tooltips.oneUse=Makes this trigger remove itself after being used.
+placements.triggers.VortexHelper/ColorSwitchTrigger.tooltips.silent=Turns off any sound made by this trigger.
+
+# Kill Lightning Trigger
+placements.triggers.VortexHelper/KillLightningTrigger.tooltips.permanent=Kills all the lightning in the current level permanently. Makes this trigger one use only.
