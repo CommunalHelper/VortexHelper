@@ -1,5 +1,5 @@
 - Name: VortexHelper
-  Version: 1.2.2
+  Version: 1.2.3
   DLL: source/bin/Debug/VortexHelper.dll
   Dependencies:
     - Name: Everest
