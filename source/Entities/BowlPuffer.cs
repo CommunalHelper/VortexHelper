@@ -511,6 +511,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 shatterTimer -= 1.5f * Engine.DeltaTime;
 
             Player player = Scene.Tracker.GetEntity<Player>();
+            if (player is not null)
                 lastPlayerPos = player.Center;
 
             switch (state) {
