@@ -227,10 +227,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
-                orig(self);
-
                 // Allows for PufferBarrier entities to be rendered with just one PufferBarrierRenderer.
                 self.Level.Add(new PufferBarrierRenderer());
+
+                orig(self);
             }
         }
     }
