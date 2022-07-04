@@ -296,8 +296,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             bool? flag;
             if (level == null) {
                 flag = null;
-            }
-            else {
+            } else {
                 MapMetaModeProperties meta = level.Session.MapData.GetMeta();
                 flag = meta?.TheoInBubble;
             }
@@ -429,12 +428,10 @@ namespace Celeste.Mod.VortexHelper.Entities {
             }
 
             player.Speed = 250f * -vector;
-            if (Input.MoveX.Value == Math.Sign(player.Speed.X)) {
-                player.Speed.X *= 1.2f;
-            }
-            if (Input.MoveY.Value == Math.Sign(player.Speed.Y)) {
-                player.Speed.Y *= 1.2f;
-            }
+
+            Vector2 aim = Input.GetAimVector(player.Facing).EightWayNormal().Sign();
+            if (aim.X == Math.Sign(player.Speed.X)) player.Speed.X *= 1.2f;
+            if (aim.Y == Math.Sign(player.Speed.Y)) player.Speed.Y *= 1.2f;
 
             SlashFx.Burst(player.Center, player.Speed.Angle());
             if (!player.Inventory.NoRefills) {
