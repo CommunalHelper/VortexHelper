@@ -354,12 +354,12 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         // Arc Motion
         public static void PurpleDashingBegin() {
+            Celeste.Freeze(0.05f); // this freeze makes fastbubbling much more lenient
+
             Util.TryGetPlayer(out Player player);
             DynData<Player> playerData = player.GetData();
             player.DashDir = Input.GetAimVector(player.Facing);
             playerData.Set(POSSIBLE_EARLY_DASHSPEED, Vector2.Zero);
-
-            Console.WriteLine(player.DashDir);
 
             foreach (PurpleBooster b in player.Scene.Tracker.GetEntities<PurpleBooster>()) {
                 if (b.StartedBoosting) {
