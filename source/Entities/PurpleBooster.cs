@@ -329,10 +329,15 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 return 0;
             }
 
-            if (Input.Dash.Pressed) {
+            // now supports demobutton presses
+            if (Input.DashPressed || Input.CrouchDashPressed) {
+                // we don't need to do this, we're not actually dashing here- but fastbubbling.
+                //demoDashed = Input.CrouchDashPressed;
                 Input.Dash.ConsumePress();
+                Input.CrouchDash.ConsumeBuffer();
                 return VortexHelperModule.PurpleBoosterDashState;
             }
+
             return VortexHelperModule.PurpleBoosterState;
         }
 
@@ -373,16 +378,16 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         public static int PurpleDashingUpdate() {
-            if (Input.Dash.Pressed) {
+            if (Input.DashPressed || Input.CrouchDashPressed) {
                 Util.TryGetPlayer(out Player player);
                 DynData<Player> playerData = player.GetData();
 
                 playerData.Set(EARLY_EXIT, true);
                 player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
 
-                Input.Dash.ConsumePress();
-                return 2;
+                return player.StartDash();
             }
+
             return VortexHelperModule.PurpleBoosterDashState;
         }
 
@@ -424,10 +429,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
             level.Shake(0.15f);
 
             Vector2 vector = (player.Center - from).SafeNormalize(-Vector2.UnitY);
-            if (Math.Abs(vector.X) < 1f
-                && Math.Abs(vector.Y) < 1f) {
+            if (Math.Abs(vector.X) < 1f && Math.Abs(vector.Y) < 1f)
                 vector *= 1.1f;
-            }
 
             player.Speed = 250f * -vector;
 
