@@ -292,6 +292,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
         public static void PurpleBoostBegin() {
             Util.TryGetPlayer(out Player player);
             player.CurrentBooster = null;
+
+            // Fixes hair sticking out of the bubble sprite when entering it ducking.
+            // If for whatever reason this breaks an older map, this will be removed.
+            player.Ducking = false;
+
             Level level = player.SceneAs<Level>();
             bool? flag;
             if (level == null) {
