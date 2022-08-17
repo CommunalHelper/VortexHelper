@@ -13,7 +13,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
     [Tracked]
     public class PurpleBooster : Entity {
         internal const string POSSIBLE_EARLY_DASHSPEED = "purpleBoostPossibleEarlyDashSpeed";
-        internal const string EARLY_EXIT = "purpleBoosterEarlyExit";
 
         private Sprite sprite;
         private Wiggler wiggler;
@@ -387,7 +386,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 Util.TryGetPlayer(out Player player);
                 DynData<Player> playerData = player.GetData();
 
-                playerData.Set(EARLY_EXIT, true);
                 player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
 
                 return player.StartDash();
@@ -406,7 +404,7 @@ namespace Celeste.Mod.VortexHelper.Entities {
             while (t < 1f) {
                 t = Calc.Approach(t, 1.0f, Engine.DeltaTime * 1.5f);
                 Vector2 vec = origin + (Vector2.UnitY * 6f) + (player.DashDir * 60f * (float)Math.Sin(t * Math.PI));
-
+                
                 playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost = (t > .6f) ? (t - .5f) * 200f * -player.DashDir : Vector2.Zero);
 
                 if (player.CollideCheck<Solid>(vec)) {
@@ -456,22 +454,11 @@ namespace Celeste.Mod.VortexHelper.Entities {
 
         internal static class Hooks {
             public static void Hook() {
-                On.Celeste.Player.DashBegin += Player_DashBegin;
                 On.Celeste.Player.ctor += Player_ctor;
             }
 
             public static void Unhook() {
-                On.Celeste.Player.DashBegin -= Player_DashBegin;
                 On.Celeste.Player.ctor -= Player_ctor;
-            }
-
-            private static void Player_DashBegin(On.Celeste.Player.orig_DashBegin orig, Player self) {
-                orig(self);
-                DynData<Player> playerData = self.GetData();
-                if (playerData.Get<bool>(EARLY_EXIT)) {
-                    --self.Dashes;
-                    playerData.Set(EARLY_EXIT, false);
-                }
             }
 
             private static void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {

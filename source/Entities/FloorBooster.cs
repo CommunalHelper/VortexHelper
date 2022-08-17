@@ -247,7 +247,6 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 DynData<Player> playerData = self.GetData();
                 playerData.Set("floorBoosterSpeed", 0f);
                 playerData.Set<FloorBooster>("lastFloorBooster", null);
-                playerData.Set(PurpleBooster.EARLY_EXIT, false);
             }
 
             private static int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self) {
