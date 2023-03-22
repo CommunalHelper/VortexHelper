@@ -479,12 +479,13 @@ namespace Celeste.Mod.VortexHelper.Entities {
                 }
                 barrier.Collidable = false;
             }
+
             return false;
         }
 
         private void PlayerThrowSelf(Player player) {
-            if (player != null)
-                player.Throw();
+            if (player.Holding?.Entity == this)
+                player?.Throw();
         }
 
         private void ShatterBowl() {
