@@ -484,8 +484,8 @@ namespace Celeste.Mod.VortexHelper.Entities {
         }
 
         private void PlayerThrowSelf(Player player) {
-            if (player.Holding?.Entity == this)
-                player?.Throw();
+            if (player?.Holding?.Entity == this)
+                player.Throw();
         }
 
         private void ShatterBowl() {
