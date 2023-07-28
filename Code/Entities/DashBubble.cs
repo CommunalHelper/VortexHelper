@@ -1,116 +1,112 @@
 ﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
-using System;
 
-namespace Celeste.Mod.VortexHelper.Entities {
-    [CustomEntity("VortexHelper/DashBubble")]
-    [Tracked(false)]
-    public class DashBubble : Entity {
-        private const float RespawnTime = 3f;
+namespace Celeste.Mod.VortexHelper.Entities;
 
-        private Image sprite;
+[CustomEntity("VortexHelper/DashBubble")]
+[Tracked(false)]
+public class DashBubble : Entity
+{
+    private const float RespawnTime = 3f;
 
-        private SineWave sine;
-        private Wiggler moveWiggle, sizeWiggle;
-        private Vector2 moveWiggleDir;
+    private readonly Image sprite;
+    private readonly SineWave sine;
 
-        private bool spiked;
-        private bool singleUse;
-        private bool wobble;
-        private float respawnTimer;
+    private readonly Wiggler moveWiggle, sizeWiggle;
+    private Vector2 moveWiggleDir;
 
-        public DashBubble(Vector2 position, bool spiked, bool singleUse, bool wobble)
-            : base(position) {
-            this.spiked = spiked;
-            this.wobble = wobble;
-            this.singleUse = singleUse;
+    private readonly bool spiked, singleUse, wobble;
+    private float respawnTimer;
 
-            Collider = new Circle(12);
+    public DashBubble(Vector2 position, bool spiked, bool singleUse, bool wobble)
+        : base(position)
+    {
+        this.spiked = spiked;
+        this.wobble = wobble;
+        this.singleUse = singleUse;
 
-            moveWiggle = Wiggler.Create(0.8f, 2f);
-            moveWiggle.StartZero = true;
-            Add(moveWiggle);
+        this.Collider = new Circle(12);
 
-            Add(new PlayerCollider(OnPlayer));
-            Add(sine = new SineWave(0.6f, 0f).Randomize());
-            Add(sprite = new Image(GFX.Game["objects/VortexHelper/dashBubble/" + (spiked ? "spiked" : "idle") + "00"]));
-            sprite.CenterOrigin();
+        this.moveWiggle = Wiggler.Create(0.8f, 2f);
+        this.moveWiggle.StartZero = true;
+        Add(this.moveWiggle);
 
-            sizeWiggle = Wiggler.Create(1f, 4f, delegate (float v) {
-                sprite.Scale = Vector2.One * (1f + v / 8);
-            });
-            sizeWiggle.StartZero = true;
-            Add(sizeWiggle);
-        }
+        Add(new PlayerCollider(OnPlayer));
 
-        public DashBubble(EntityData data, Vector2 offset)
-            : this(data.Position + offset, data.Bool("spiked"), data.Bool("singleUse"), data.Bool("wobble")) { }
-        
-        public override void Added(Scene scene) {
-            base.Added(scene);
-        }
+        Add(this.sine = new SineWave(0.6f, 0f).Randomize());
+        Add(this.sprite = new Image(GFX.Game["objects/VortexHelper/dashBubble/" + (spiked ? "spiked" : "idle") + "00"]));
+        this.sprite.CenterOrigin();
 
-        public override void Update() {
-            base.Update();
-            if (respawnTimer > 0f) {
-                respawnTimer -= Engine.DeltaTime;
-                if (respawnTimer <= 0f) {
-                    Respawn();
-                }
-            }
-
-            if (wobble) {
-                UpdateY();
-            }
-        }
-
-        private void Respawn() {
-            if (!Collidable) {
-                Collidable = true;
-                sprite.Visible = true;
-                sizeWiggle.Start();
-                Audio.Play(SFX.game_04_greenbooster_reappear, Position);
-            }
-        }
-
-        private void OnPlayer(Player player) {
-            if (!player.DashAttacking) {
-
-                int dashes = player.Dashes;
-                float stamina = player.Stamina;
-                player.PointBounce(Center);
-                player.Dashes = dashes;
-                player.Stamina = stamina;
-
-                Audio.Play(SFX.game_06_feather_bubble_bounce, Position);
-                Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
-
-                moveWiggle.Start();
-                moveWiggleDir = (Center - player.Center).SafeNormalize(Vector2.UnitY);
-                sizeWiggle.Start();
-
-                if (spiked) {
-                    player.Die((player.Position - Position).SafeNormalize());
-                }
-
-                return;
-            }
-
-            // dashed into
-            Audio.Play(SFX.game_05_redbooster_end);
-            sprite.Visible = false;
-            Collidable = false;
-            Celeste.Freeze(0.05f);
-            if (!singleUse) {
-                respawnTimer = RespawnTime;
-            }
-
-            SceneAs<Level>().ParticlesFG.Emit(Player.P_CassetteFly, 6, Center, Vector2.One * 7f);
-        }
-
-        private void UpdateY() {
-            sprite.Position = Vector2.UnitY * sine.Value * 2f + (moveWiggleDir * moveWiggle.Value * -8f);
-        }
+        this.sizeWiggle = Wiggler.Create(1f, 4f, v => this.sprite.Scale = Vector2.One * (1f + v / 8));
+        this.sizeWiggle.StartZero = true;
+        Add(this.sizeWiggle);
     }
+
+    public DashBubble(EntityData data, Vector2 offset)
+        : this(data.Position + offset, data.Bool("spiked"), data.Bool("singleUse"), data.Bool("wobble")) { }
+
+    public override void Added(Scene scene) => base.Added(scene);
+
+    public override void Update()
+    {
+        base.Update();
+        if (this.respawnTimer > 0f)
+        {
+            this.respawnTimer -= Engine.DeltaTime;
+            if (this.respawnTimer <= 0f)
+                Respawn();
+        }
+
+        if (this.wobble)
+            UpdateY();
+    }
+
+    private void Respawn()
+    {
+        if (this.Collidable)
+            return;
+
+        this.Collidable = true;
+        this.sprite.Visible = true;
+        this.sizeWiggle.Start();
+        Audio.Play(SFX.game_04_greenbooster_reappear, this.Position);
+    }
+
+    private void OnPlayer(Player player)
+    {
+        if (!player.DashAttacking)
+        {
+            int dashes = player.Dashes;
+            float stamina = player.Stamina;
+
+            player.PointBounce(this.Center);
+            player.Dashes = dashes;
+            player.Stamina = stamina;
+
+            Audio.Play(SFX.game_06_feather_bubble_bounce, this.Position);
+            Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
+
+            this.moveWiggle.Start();
+            this.moveWiggleDir = (this.Center - player.Center).SafeNormalize(Vector2.UnitY);
+            this.sizeWiggle.Start();
+
+            if (this.spiked)
+                player.Die((player.Position - this.Position).SafeNormalize());
+
+            return;
+        }
+
+        // dashed into
+        Audio.Play(SFX.game_05_redbooster_end);
+        this.sprite.Visible = false;
+        this.Collidable = false;
+        Celeste.Freeze(0.05f);
+        if (!this.singleUse)
+            this.respawnTimer = RespawnTime;
+
+        SceneAs<Level>().ParticlesFG.Emit(Player.P_CassetteFly, 6, this.Center, Vector2.One * 7f);
+    }
+
+    private void UpdateY() => this.sprite.Position = Vector2.UnitY * this.sine.Value * 2f + this.moveWiggleDir * this.moveWiggle.Value * -8f;
 }

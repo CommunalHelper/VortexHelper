@@ -4,42 +4,40 @@ using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
 
-namespace Celeste.Mod.VortexHelper.Triggers {
+namespace Celeste.Mod.VortexHelper.Triggers;
 
-    [CustomEntity("VortexHelper/ColorSwitchTrigger")]
-    public class ColorSwitchTrigger : Trigger {
-        private bool oneUse, silent;
-        private VortexHelperSession.SwitchBlockColor color;
+[CustomEntity("VortexHelper/ColorSwitchTrigger")]
+public class ColorSwitchTrigger : Trigger
+{
+    private readonly bool oneUse, silent;
+    private readonly VortexHelperSession.SwitchBlockColor color;
 
-        public ColorSwitchTrigger(EntityData data, Vector2 offset)
-            : base(data, offset) {
-            oneUse = data.Bool("oneUse");
-            silent = data.Bool("silent");
+    public ColorSwitchTrigger(EntityData data, Vector2 offset)
+        : base(data, offset)
+    {
+        this.oneUse = data.Bool("oneUse");
+        this.silent = data.Bool("silent");
 
-            color = (data.Int("index")) switch {
-                1 => VortexHelperSession.SwitchBlockColor.Rose,
-                2 => VortexHelperSession.SwitchBlockColor.Orange,
-                3 => VortexHelperSession.SwitchBlockColor.Lime,
-                _ => VortexHelperSession.SwitchBlockColor.Blue,
-            };
-        }
+        this.color = data.Int("index") switch
+        {
+            1 => VortexHelperSession.SwitchBlockColor.Rose,
+            2 => VortexHelperSession.SwitchBlockColor.Orange,
+            3 => VortexHelperSession.SwitchBlockColor.Lime,
+            _ => VortexHelperSession.SwitchBlockColor.Blue,
+        };
+    }
 
-        public override void Awake(Scene scene) {
-            base.Awake(scene);
-        }
+    public override void Awake(Scene scene) => base.Awake(scene);
 
-        public override void OnEnter(Player player) {
-            base.OnEnter(player);
-            VortexHelperModule.SessionProperties.SessionSwitchBlockColor = color;
-            ColorSwitch.UpdateColorSwitches(Scene, color);
-            if (SwitchBlock.RoomHasSwitchBlock(Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor) && !silent) {
-                Audio.Play(CustomSFX.game_switchBlock_switch,
-                    "tone", VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetSoundParam());
-            }
+    public override void OnEnter(Player player)
+    {
+        base.OnEnter(player);
+        VortexHelperModule.SessionProperties.SessionSwitchBlockColor = this.color;
+        ColorSwitch.UpdateColorSwitches(this.Scene, this.color);
+        if (SwitchBlock.RoomHasSwitchBlock(this.Scene, VortexHelperModule.SessionProperties.SessionSwitchBlockColor) && !this.silent)
+            Audio.Play(CustomSFX.game_switchBlock_switch, "tone", VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetSoundParam());
 
-            if (oneUse) {
-                RemoveSelf();
-            }
-        }
+        if (this.oneUse)
+            RemoveSelf();
     }
 }

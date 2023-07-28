@@ -1,9 +1,11 @@
-﻿namespace Celeste.Mod.VortexHelper {
-    public class VortexHelperSession : EverestModuleSession {
+﻿namespace Celeste.Mod.VortexHelper;
 
-        public enum SwitchBlockColor {
-            Blue, Rose, Orange, Lime
-        }
-        public SwitchBlockColor SessionSwitchBlockColor { get; set; } = SwitchBlockColor.Blue;
+public class VortexHelperSession : EverestModuleSession
+{
+    public enum SwitchBlockColor
+    {
+        Blue, Rose, Orange, Lime
     }
+
+    public SwitchBlockColor SessionSwitchBlockColor { get; set; } = SwitchBlockColor.Blue;
 }

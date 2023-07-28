@@ -3,762 +3,861 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using System;
 
-namespace Celeste.Mod.VortexHelper.Entities {
-    [CustomEntity("VortexHelper/BowlPuffer")]
-    public class BowlPuffer : Actor {
-        [Tracked(false)]
-        public class BowlPufferCollider : Component {
-            public Action<BowlPuffer, Spring> OnCollide;
-            public Collider Collider;
+namespace Celeste.Mod.VortexHelper.Entities;
 
-            public BowlPufferCollider(Action<BowlPuffer, Spring> onCollide, Collider collider = null)
-                : base(active: false, visible: false) {
-                OnCollide = onCollide;
-                Collider = collider;
-            }
+[CustomEntity("VortexHelper/BowlPuffer")]
+public class BowlPuffer : Actor
+{
+    [Tracked(false)]
+    public class BowlPufferCollider : Component
+    {
+        public Action<BowlPuffer, Spring> OnCollide;
+        public Collider Collider;
 
-            public void Check(BowlPuffer puffer) {
-                if (OnCollide != null) {
-                    Collider collider = Entity.Collider;
-                    if (Collider != null) {
-                        Entity.Collider = Collider;
-                    }
-                    if (puffer.CollideCheck(Entity)) {
-                        OnCollide(puffer, (Spring) Entity);
-                    }
-                    Entity.Collider = collider;
-                }
-            }
+        public BowlPufferCollider(Action<BowlPuffer, Spring> onCollide, Collider collider = null)
+            : base(active: false, visible: false)
+        {
+            this.OnCollide = onCollide;
+            this.Collider = collider;
         }
 
-        private static ParticleType P_Shatter, P_Crystal;
+        public void Check(BowlPuffer puffer)
+        {
+            if (this.OnCollide is not null)
+            {
+                Collider collider = this.Entity.Collider;
+                if (this.Collider is not null)
+                    this.Entity.Collider = this.Collider;
 
-        private enum States {
-            Gone,
-            Crystal
-        }
-        private States state = States.Crystal;
-        private Facings facing = Facings.Right;
+                if (puffer.CollideCheck(this.Entity))
+                    this.OnCollide(puffer, (Spring) this.Entity);
 
-        private readonly bool noRespawn;
-
-        // Uses three sprites so that we can play the vanilla puffer animations without extra sprite work.
-        private readonly Sprite pufferBowlBottom, puffer, pufferBowlTop;
-
-        private readonly Vector2 startPosition;
-
-        private SimpleCurve returnCurve;
-        private float goneTimer;
-        private float eyeSpin;
-
-        private Vector2 previousPosition;
-        private Vector2 Speed;
-        private Vector2 prevLiftSpeed;
-
-        private float noGravityTimer;
-        private float cantExplodeTimer;
-        private float shatterTimer;
-
-        private float explodeTimer;
-        private float explodeTimeLeft;
-        private bool fused = false;
-
-        private Vector2 lastPlayerPos;
-
-        private readonly Wiggler inflateWiggler;
-        private Vector2 scale;
-
-        private bool exploded = false;
-
-        private readonly Circle pushRadius;
-
-        private Level Level;
-
-        private readonly Holdable Hold;
-        private readonly Collision onCollideH, onCollideV;
-        private HoldableCollider hitSeeker;
-
-        private float hardVerticalHitSoundCooldown;
-        private float swatTimer;
-
-        private const float ChainExplosionDelay = 0.1f;
-        private float chainTimer = ChainExplosionDelay;
-        private bool chainExplode = false;
-
-        // TODO: Custom sound.
-
-        public BowlPuffer(EntityData data, Vector2 offset)
-            : this(data.Position + offset + (Vector2.UnitY * 8f), data.Bool("noRespawn"), data.Float("explodeTimer", 0f)) { }
-
-        public BowlPuffer(Vector2 position, bool noRespawn, float explodeTimer)
-            : base(position) {
-            this.noRespawn = noRespawn;
-            this.explodeTimer = explodeTimer;
-            previousPosition = position;
-            startPosition = position;
-            Depth = Depths.TheoCrystal;
-            Collider = new Hitbox(8f, 10f, -4f, -10f);
-
-            Add(pufferBowlBottom = VortexHelperModule.PufferBowlSpriteBank.Create("pufferBowlBottom"));
-            Add(puffer = GFX.SpriteBank.Create("pufferFish"));
-            Add(pufferBowlTop = VortexHelperModule.PufferBowlSpriteBank.Create("pufferBowlTop"));
-            puffer.Y -= 9f;
-
-            // Weird offset needed
-            Vector2 bowlOffset = new Vector2(-32, -43);
-            pufferBowlTop.Position = pufferBowlBottom.Position += bowlOffset;
-
-            pushRadius = new Circle(40f);
-
-            inflateWiggler = Wiggler.Create(0.6f, 2f);
-            Add(inflateWiggler);
-
-            Add(Hold = new Holdable(0.1f) {
-                PickupCollider = new Hitbox(21f, 17f, -11f, -17f),
-                SlowFall = false,
-                SlowRun = true,
-                OnPickup = OnPickup,
-                OnRelease = OnRelease,
-                DangerousCheck = Dangerous,
-                OnHitSeeker = HitSeeker,
-                OnSwat = Swat,
-                OnHitSpring = HitSpring,
-                OnHitSpinner = HitSpinner,
-                SpeedGetter = () => Speed,
-            });
-
-            onCollideH = OnCollideH;
-            onCollideV = OnCollideV;
-
-            scale = Vector2.One;
-
-            LiftSpeedGraceTime = 0.1f;
-            Tag = Tags.TransitionUpdate;
-            Add(new MirrorReflection());
-        }
-
-        private void AllSpritesPlay(string anim) {
-            pufferBowlBottom.Play(anim);
-            puffer.Play(anim);
-            pufferBowlTop.Play(anim);
-        }
-
-        public override void Added(Scene scene) {
-            base.Added(scene);
-            Level = SceneAs<Level>();
-        }
-
-        private void OnCollideH(CollisionData data) {
-            if (state == States.Crystal) {
-                if (data.Hit is DashSwitch dashSwitch)
-                    dashSwitch.OnDashCollide(null, Vector2.UnitX * Math.Sign(Speed.X));
-
-                Audio.Play(SFX.game_05_crystaltheo_impact_side, Position);
-
-                if (Math.Abs(Speed.X) > 100f)
-                    ImpactParticles(data.Direction);
-
-                Speed.X *= -0.4f;
+                this.Entity.Collider = collider;
             }
         }
+    }
 
-        private void OnCollideV(CollisionData data) {
-            if (state == States.Crystal) {
-                if (data.Hit is DashSwitch dashSwitch)
-                    dashSwitch.OnDashCollide(null, Vector2.UnitY * Math.Sign(Speed.Y));
+    private static ParticleType P_Shatter, P_Crystal;
 
-                if (Speed.Y > 0f) {
-                    if (hardVerticalHitSoundCooldown <= 0f) {
-                        Audio.Play(SFX.game_05_crystaltheo_impact_ground, Position, "crystal_velocity", Calc.ClampedMap(Speed.Y, 0f, 200f));
-                        hardVerticalHitSoundCooldown = 0.5f;
-                    } else {
-                        Audio.Play(SFX.game_05_crystaltheo_impact_ground, Position, "crystal_velocity", 0f);
-                    }
-                }
+    private enum States
+    {
+        Gone,
+        Crystal
+    }
+    private States state = States.Crystal;
+    private Facings facing = Facings.Right;
 
-                if (Speed.Y > 160f)
-                    ImpactParticles(data.Direction);
+    private readonly bool noRespawn;
 
-                if (Speed.Y > 140f && data.Hit is not (SwapBlock or DashSwitch))
-                    Speed.Y *= -0.6f;
-                else
-                    Speed.Y = 0f;
+    // Uses three sprites so that we can play the vanilla puffer animations without extra sprite work.
+    private readonly Sprite pufferBowlBottom, puffer, pufferBowlTop;
+
+    private readonly Vector2 startPosition;
+
+    private SimpleCurve returnCurve;
+    private float goneTimer;
+    private float eyeSpin;
+
+    private Vector2 previousPosition;
+    private Vector2 Speed;
+    private Vector2 prevLiftSpeed;
+
+    private float noGravityTimer;
+    private float cantExplodeTimer;
+    private float shatterTimer;
+
+    private readonly float explodeTime;
+    private float explodeTimeLeft;
+    private bool fused = false;
+
+    private Vector2 lastPlayerPos;
+
+    private readonly Wiggler inflateWiggler;
+    private Vector2 scale;
+
+    private bool exploded = false;
+
+    private readonly Circle pushRadius;
+
+    private Level Level;
+
+    private readonly Holdable Hold;
+    private readonly Collision onCollideH, onCollideV;
+    private HoldableCollider hitSeeker;
+
+    private float hardVerticalHitSoundCooldown;
+    private float swatTimer;
+
+    private const float ChainExplosionDelay = 0.1f;
+    private float chainTimer = ChainExplosionDelay;
+    private bool chainExplode = false;
+
+    // TODO: Custom sound.
+
+    public BowlPuffer(EntityData data, Vector2 offset)
+        : this(data.Position + offset + Vector2.UnitY * 8f, data.Bool("noRespawn"), data.Float("explodeTimer", 0f)) { }
+
+    public BowlPuffer(Vector2 position, bool noRespawn, float explodeTimer)
+        : base(position)
+    {
+        this.noRespawn = noRespawn;
+        this.explodeTime = explodeTimer;
+        this.previousPosition = position;
+        this.startPosition = position;
+        this.Depth = Depths.TheoCrystal;
+        this.Collider = new Hitbox(8f, 10f, -4f, -10f);
+
+        Add(this.pufferBowlBottom = VortexHelperModule.PufferBowlSpriteBank.Create("pufferBowlBottom"));
+        Add(this.puffer = GFX.SpriteBank.Create("pufferFish"));
+        Add(this.pufferBowlTop = VortexHelperModule.PufferBowlSpriteBank.Create("pufferBowlTop"));
+        this.puffer.Y -= 9f;
+
+        // Weird offset needed
+        var bowlOffset = new Vector2(-32, -43);
+        this.pufferBowlTop.Position = this.pufferBowlBottom.Position += bowlOffset;
+
+        this.pushRadius = new Circle(40f);
+
+        this.inflateWiggler = Wiggler.Create(0.6f, 2f);
+        Add(this.inflateWiggler);
+
+        Add(this.Hold = new Holdable(0.1f)
+        {
+            PickupCollider = new Hitbox(21f, 17f, -11f, -17f),
+            SlowFall = false,
+            SlowRun = true,
+            OnPickup = OnPickup,
+            OnRelease = OnRelease,
+            DangerousCheck = Dangerous,
+            OnHitSeeker = HitSeeker,
+            OnSwat = Swat,
+            OnHitSpring = HitSpring,
+            OnHitSpinner = HitSpinner,
+            SpeedGetter = () => this.Speed,
+        });
+
+        this.onCollideH = OnCollideH;
+        this.onCollideV = OnCollideV;
+
+        this.scale = Vector2.One;
+
+        this.LiftSpeedGraceTime = 0.1f;
+        this.Tag = Tags.TransitionUpdate;
+        Add(new MirrorReflection());
+    }
+
+    private void AllSpritesPlay(string anim)
+    {
+        this.pufferBowlBottom.Play(anim);
+        this.puffer.Play(anim);
+        this.pufferBowlTop.Play(anim);
+    }
+
+    public override void Added(Scene scene)
+    {
+        base.Added(scene);
+        this.Level = SceneAs<Level>();
+    }
+
+    private void OnCollideH(CollisionData data)
+    {
+        if (this.state is not States.Crystal)
+            return;
+
+        if (data.Hit is DashSwitch dashSwitch)
+            dashSwitch.OnDashCollide(null, Vector2.UnitX * Math.Sign(this.Speed.X));
+
+        Audio.Play(SFX.game_05_crystaltheo_impact_side, this.Position);
+
+        if (Math.Abs(this.Speed.X) > 100f)
+            ImpactParticles(data.Direction);
+
+        this.Speed.X *= -0.4f;
+    }
+
+    private void OnCollideV(CollisionData data)
+    {
+        if (this.state is not States.Crystal)
+            return;
+
+        if (data.Hit is DashSwitch dashSwitch)
+            dashSwitch.OnDashCollide(null, Vector2.UnitY * Math.Sign(this.Speed.Y));
+
+        if (this.Speed.Y > 0f)
+        {
+            if (this.hardVerticalHitSoundCooldown <= 0f)
+            {
+                Audio.Play(SFX.game_05_crystaltheo_impact_ground, this.Position, "crystal_velocity", Calc.ClampedMap(this.Speed.Y, 0f, 200f));
+                this.hardVerticalHitSoundCooldown = 0.5f;
             }
+            else
+                Audio.Play(SFX.game_05_crystaltheo_impact_ground, this.Position, "crystal_velocity", 0f);
         }
 
-        private void ImpactParticles(Vector2 dir) {
-            float direction;
-            Vector2 position, positionRange;
+        if (this.Speed.Y > 160f)
+            ImpactParticles(data.Direction);
 
-            if (dir.X > 0f) {
-                direction = (float) Math.PI;
-                position = new Vector2(Right, Y - 4f);
-                positionRange = Vector2.UnitY * 6f;
-            } else if (dir.X < 0f) {
-                direction = 0f;
-                position = new Vector2(Left, Y - 4f);
-                positionRange = Vector2.UnitY * 6f;
-            } else if (dir.Y > 0f) {
-                direction = -(float) Math.PI / 2f;
-                position = new Vector2(X, Bottom);
-                positionRange = Vector2.UnitX * 6f;
-            } else {
-                direction = (float) Math.PI / 2f;
-                position = new Vector2(X, Top);
-                positionRange = Vector2.UnitX * 6f;
-            }
+        if (this.Speed.Y > 140f && data.Hit is not SwapBlock or DashSwitch)
+            this.Speed.Y *= -0.6f;
+        else
+            this.Speed.Y = 0f;
+    }
 
-            Level.Particles.Emit(TheoCrystal.P_Impact, 12, position, positionRange, direction);
+    private void ImpactParticles(Vector2 dir)
+    {
+        float direction;
+        Vector2 position, positionRange;
+
+        if (dir.X > 0f)
+        {
+            direction = (float) Math.PI;
+            position = new Vector2(this.Right, this.Y - 4f);
+            positionRange = Vector2.UnitY * 6f;
+        }
+        else if (dir.X < 0f)
+        {
+            direction = 0f;
+            position = new Vector2(this.Left, this.Y - 4f);
+            positionRange = Vector2.UnitY * 6f;
+        }
+        else if (dir.Y > 0f)
+        {
+            direction = -(float) Math.PI / 2f;
+            position = new Vector2(this.X, this.Bottom);
+            positionRange = Vector2.UnitX * 6f;
+        }
+        else
+        {
+            direction = (float) Math.PI / 2f;
+            position = new Vector2(this.X, this.Top);
+            positionRange = Vector2.UnitX * 6f;
         }
 
-        public void Swat(HoldableCollider hc, int dir) {
-            if (Hold.IsHeld && hitSeeker == null) {
-                swatTimer = 0.1f;
-                hitSeeker = hc;
-                Hold.Holder.Swat(dir);
-            }
+        this.Level.Particles.Emit(TheoCrystal.P_Impact, 12, position, positionRange, direction);
+    }
+
+    public void Swat(HoldableCollider hc, int dir)
+    {
+        if (!this.Hold.IsHeld || this.hitSeeker is not null)
+            return;
+
+        this.swatTimer = 0.1f;
+        this.hitSeeker = hc;
+        this.Hold.Holder.Swat(dir);
+    }
+
+    public bool Dangerous(HoldableCollider hc)
+        => !this.Hold.IsHeld && this.Speed != Vector2.Zero && this.hitSeeker != hc;
+
+    protected override void OnSquish(CollisionData data)
+    {
+        if (TrySquishWiggle(data) || this.state is States.Gone)
+            return;
+
+        Explode();
+        GotoGone();
+    }
+
+    public override bool IsRiding(Solid solid)
+        => this.Speed.Y == 0f && base.IsRiding(solid);
+
+    public void HitSeeker(Seeker seeker)
+    {
+        if (!this.Hold.IsHeld)
+            this.Speed = (this.Center - seeker.Center).SafeNormalize(120f);
+        Audio.Play(SFX.game_05_crystaltheo_impact_side, this.Position);
+    }
+
+    #region Hitting other entities
+
+    public void HitSpinner(Entity spinner)
+    {
+        if (!this.Hold.IsHeld && this.Speed.Length() < 0.01f && this.LiftSpeed.Length() < 0.01f && (this.previousPosition - this.ExactPosition).Length() < 0.01f && OnGround())
+        {
+            int num = Math.Sign(this.X - spinner.X);
+            if (num == 0) num = 1;
+
+            this.Speed.X = num * 120f;
+            this.Speed.Y = -30f;
         }
+    }
 
-        public bool Dangerous(HoldableCollider hc)
-            => !Hold.IsHeld && Speed != Vector2.Zero && hitSeeker != hc;
-
-        protected override void OnSquish(CollisionData data) {
-            if (!TrySquishWiggle(data) && state != States.Gone) {
-                Explode();
-                GotoGone();
-            }
-        }
-
-        public override bool IsRiding(Solid solid)
-            => Speed.Y == 0f && base.IsRiding(solid);
-
-        public void HitSeeker(Seeker seeker) {
-            if (!Hold.IsHeld) {
-                Speed = (Center - seeker.Center).SafeNormalize(120f);
-            }
-            Audio.Play(SFX.game_05_crystaltheo_impact_side, Position);
-        }
-
-        #region Hitting other entities
-
-        public void HitSpinner(Entity spinner) {
-            if (!Hold.IsHeld && Speed.Length() < 0.01f && LiftSpeed.Length() < 0.01f && (previousPosition - ExactPosition).Length() < 0.01f && OnGround()) {
-                int num = Math.Sign(X - spinner.X);
-                if (num == 0) num = 1;
-
-                Speed.X = num * 120f;
-                Speed.Y = -30f;
-            }
-        }
-
-        public bool HitSpring(Spring spring) {
-            if (Hold.IsHeld)
-                return false;
-
-            if (spring.Orientation == Spring.Orientations.Floor && Speed.Y >= 0f) {
-                Speed.X *= 0.5f;
-                Speed.Y = -160f;
-                noGravityTimer = 0.15f;
-                return true;
-            }
-
-            if (spring.Orientation == Spring.Orientations.WallLeft && Speed.X <= 0f) {
-                MoveTowardsY(spring.CenterY + 5f, 4f);
-                Speed.X = 220f;
-                Speed.Y = -80f;
-                noGravityTimer = 0.1f;
-                return true;
-            }
-
-            if (spring.Orientation == Spring.Orientations.WallRight && Speed.X >= 0f) {
-                MoveTowardsY(spring.CenterY + 5f, 4f);
-                Speed.X = -220f;
-                Speed.Y = -80f;
-                noGravityTimer = 0.1f;
-                return true;
-            }
-
+    public bool HitSpring(Spring spring)
+    {
+        if (this.Hold.IsHeld)
             return false;
+
+        if (spring.Orientation == Spring.Orientations.Floor && this.Speed.Y >= 0f)
+        {
+            this.Speed.X *= 0.5f;
+            this.Speed.Y = -160f;
+            this.noGravityTimer = 0.15f;
+            return true;
         }
 
-        #endregion
-
-        #region Picking up & releasing
-
-        private void OnPickup() {
-            Speed = Vector2.Zero;
-            AddTag(Tags.Persistent);
+        if (spring.Orientation == Spring.Orientations.WallLeft && this.Speed.X <= 0f)
+        {
+            MoveTowardsY(spring.CenterY + 5f, 4f);
+            this.Speed.X = 220f;
+            this.Speed.Y = -80f;
+            this.noGravityTimer = 0.1f;
+            return true;
         }
 
-        private void OnRelease(Vector2 force) {
-            RemoveTag(Tags.Persistent);
-
-            if (force.X != 0f && force.Y == 0f)
-                force.Y = -0.4f;
-
-            Speed = force * 200f;
-            if (Speed != Vector2.Zero)
-                noGravityTimer = 0.1f;
+        if (spring.Orientation == Spring.Orientations.WallRight && this.Speed.X >= 0f)
+        {
+            MoveTowardsY(spring.CenterY + 5f, 4f);
+            this.Speed.X = -220f;
+            this.Speed.Y = -80f;
+            this.noGravityTimer = 0.1f;
+            return true;
         }
 
-        #endregion
+        return false;
+    }
 
-        #region Explosiong
+    #endregion
 
-        private void Explode(bool playsound = true) {
-            Collider = pushRadius;
-            if (playsound)
-                Audio.Play(SFX.game_10_puffer_splode, Position);
+    #region Picking up & releasing
 
-            puffer.Play("explode");
-            if (state == States.Crystal)
-                ShatterBowl();
+    private void OnPickup()
+    {
+        this.Speed = Vector2.Zero;
+        AddTag(Tags.Persistent);
+    }
 
-            exploded = true;
+    private void OnRelease(Vector2 force)
+    {
+        RemoveTag(Tags.Persistent);
 
-            // Yeah, there's a lot going in there.
-            DoEntityCustomInteraction();
+        if (force.X != 0f && force.Y == 0f)
+            force.Y = -0.4f;
 
-            exploded = false;
-            Collider = null;
+        this.Speed = force * 200f;
+        if (this.Speed != Vector2.Zero)
+            this.noGravityTimer = 0.1f;
+    }
 
-            Level level = SceneAs<Level>();
-            level.Shake();
-            level.Displacement.AddBurst(Position, 0.4f, 12f, 36f, 0.5f);
-            level.Displacement.AddBurst(Position, 0.4f, 24f, 48f, 0.5f);
-            level.Displacement.AddBurst(Position, 0.4f, 36f, 60f, 0.5f);
+    #endregion
 
-            for (float num = 0f; num < (float)Math.PI * 2f; num += 0.17453292f) {
-                Vector2 position = Center + Calc.AngleToVector(num + Calc.Random.Range(-(float)Math.PI / 90f, (float)Math.PI / 90f), Calc.Random.Range(12, 18));
-                level.Particles.Emit(Seeker.P_Regen, position, num);
+    #region Explosiong
+
+    private void Explode(bool playsound = true)
+    {
+        this.Collider = this.pushRadius;
+        if (playsound)
+            Audio.Play(SFX.game_10_puffer_splode, this.Position);
+
+        this.puffer.Play("explode");
+        if (this.state == States.Crystal)
+            ShatterBowl();
+
+        this.exploded = true;
+
+        // Yeah, there's a lot going in there.
+        DoEntityCustomInteraction();
+
+        this.exploded = false;
+        this.Collider = null;
+
+        Level level = SceneAs<Level>();
+        level.Shake();
+        level.Displacement.AddBurst(this.Position, 0.4f, 12f, 36f, 0.5f);
+        level.Displacement.AddBurst(this.Position, 0.4f, 24f, 48f, 0.5f);
+        level.Displacement.AddBurst(this.Position, 0.4f, 36f, 60f, 0.5f);
+
+        for (float num = 0f; num < (float) Math.PI * 2f; num += 0.17453292f)
+        {
+            Vector2 position = this.Center + Calc.AngleToVector(num + Calc.Random.Range(-(float) Math.PI / 90f, (float) Math.PI / 90f), Calc.Random.Range(12, 18));
+            level.Particles.Emit(Seeker.P_Regen, position, num);
+        }
+    }
+
+    private void DoEntityCustomInteraction()
+    {
+        Player player = SceneAs<Level>().Tracker.GetEntity<Player>();
+
+        // Touch Switches
+        foreach (TouchSwitch e in this.Scene.Tracker.GetEntities<TouchSwitch>())
+            if (CollideCheck(e))
+                e.TurnOn();
+
+        // Floating Debris
+        foreach (FloatingDebris e in this.Scene.Tracker.GetEntities<FloatingDebris>())
+            if (CollideCheck(e))
+                e.OnExplode(this.Position);
+
+        foreach (Actor e in CollideAll<Actor>())
+        {
+            switch (e)
+            {
+                case Player p:
+                    p.ExplodeLaunch(this.Position, snapUp: false, sidesOnly: true);
+                    break;
+
+                case TheoCrystal crystal:
+                    if (!this.Scene.CollideCheck<Solid>(this.Position, crystal.Center))
+                        crystal.ExplodeLaunch(this.Position);
+                    break;
+
+                case Puffer puffer:
+                    VortexHelperModule.Puffer_Explode.Invoke(puffer, null);
+                    VortexHelperModule.Puffer_GotoGone.Invoke(puffer, null);
+                    break;
+
+                case BowlPuffer puffer:
+                    puffer.chainExplode = !puffer.exploded && puffer.state != States.Gone;
+                    break;
             }
         }
 
-        private void DoEntityCustomInteraction() {
-            Player player = SceneAs<Level>().Tracker.GetEntity<Player>();
+        foreach (Solid e in CollideAll<Solid>())
+        {
+            switch (e)
+            {
+                case TempleCrackedBlock block:
+                    block.Break(this.Position);
+                    break;
 
-            // Touch Switches
-            foreach (TouchSwitch e in Scene.Tracker.GetEntities<TouchSwitch>()) {
-                if (CollideCheck(e))
-                    e.TurnOn();
-            }
+                case ColorSwitch colorSwitch:
+                    colorSwitch.Switch(Calc.FourWayNormal(e.Center - this.Center));
+                    break;
 
-            // Floating Debris
-            foreach (FloatingDebris e in Scene.Tracker.GetEntities<FloatingDebris>()) {
-                if (CollideCheck(e))
-                    e.OnExplode(Position);
-            }
+                case DashBlock block:
+                    block.Break(this.Center, Calc.FourWayNormal(e.Center - this.Center), true, true);
+                    break;
 
-            foreach (Actor e in CollideAll<Actor>()) {
-                switch (e) {
-                    case Player p:
-                        p.ExplodeLaunch(Position, snapUp: false, sidesOnly: true);
-                        break;
+                case FallingBlock block:
+                    block.Triggered = true;
+                    break;
 
-                    case TheoCrystal crystal:
-                        if (!Scene.CollideCheck<Solid>(Position, crystal.Center))
-                            crystal.ExplodeLaunch(Position);
-                        break;
+                case MoveBlock block:
+                    block.OnStaticMoverTrigger(null);
+                    break;
 
-                    case Puffer puffer:
-                        VortexHelperModule.Puffer_Explode.Invoke(puffer, null);
-                        VortexHelperModule.Puffer_GotoGone.Invoke(puffer, null);
-                        break;
+                case CrushBlock block:
+                    VortexHelperModule.CrushBlock_OnDashed.Invoke(block, new object[] { null, Calc.FourWayNormal(block.Center - this.Center) });
+                    break;
 
-                    case BowlPuffer puffer:
-                        puffer.chainExplode = !puffer.exploded && puffer.state != States.Gone;
-                        break;
-                }
-            }
+                case BubbleWrapBlock block:
+                    block.Break();
+                    break;
 
-            foreach (Solid e in CollideAll<Solid>()) {
-                switch (e) {
-                    case TempleCrackedBlock block:
-                        block.Break(Position); 
-                        break;
+                case LightningBreakerBox box:
+                    if (player is not null)
+                    {
+                        float stamina = player.Stamina;
+                        int dashes = player.Dashes;
+                        box.OnDashCollide(player, Calc.FourWayNormal(box.Center - this.Center));
+                        player.Dashes = dashes;
+                        player.Stamina = stamina;
+                    }
+                    break;
+            };
+        }
+    }
 
-                    case ColorSwitch colorSwitch:
-                        colorSwitch.Switch(Calc.FourWayNormal(e.Center - Center)); 
-                        break;
+    #endregion
 
-                    case DashBlock block:
-                        block.Break(Center, Calc.FourWayNormal(e.Center - Center), true, true); 
-                        break;
+    private void SetBowlVisible(bool visible) => this.pufferBowlBottom.Visible = this.pufferBowlTop.Visible = visible;
 
-                    case FallingBlock block:
-                        block.Triggered = true; 
-                        break;
+    #region State gotos
 
-                    case MoveBlock block:
-                        block.OnStaticMoverTrigger(null); 
-                        break;
+    private void GotoGone()
+    {
+        SetBowlVisible(false);
 
-                    case CrushBlock block:
-                        VortexHelperModule.CrushBlock_OnDashed.Invoke(block, new object[] { null, Calc.FourWayNormal(block.Center - Center) }); 
-                        break;
+        Vector2 control = this.Position + (this.startPosition - this.Position) * 0.5f;
 
-                    case BubbleWrapBlock block:
-                        block.Break(); 
-                        break;
-
-                    case LightningBreakerBox box:
-                        if (player != null) {
-                            float stamina = player.Stamina;
-                            int dashes = player.Dashes;
-                            box.OnDashCollide(player, Calc.FourWayNormal(box.Center - Center));
-                            player.Dashes = dashes;
-                            player.Stamina = stamina;
-                        }
-                        break;
-                };
-            }
+        if (Vector2.DistanceSquared(this.startPosition, this.Position) > 100f)
+        {
+            if (Math.Abs(this.Position.Y - this.startPosition.Y) > Math.Abs(this.Position.X - this.startPosition.X))
+                control.X += this.Position.X > this.startPosition.X ? -24 : 24;
+            else
+                control.Y += this.Position.Y > this.startPosition.Y ? -24f : 24;
         }
 
-        #endregion
+        this.returnCurve = new SimpleCurve(this.Position, this.startPosition, control);
+        this.goneTimer = 2.5f;
 
-        private void SetBowlVisible(bool visible) {
-            pufferBowlBottom.Visible = pufferBowlTop.Visible = visible;
+        this.state = States.Gone;
+
+        this.Collidable = false;
+        this.Collider = null;
+    }
+
+    private void GotoCrystal()
+    {
+        SetBowlVisible(true);
+
+        this.fused = false;
+
+        Add(this.Hold);
+        this.Collider = new Hitbox(8f, 10f, -4f, -10f);
+
+        this.facing = Facings.Right;
+
+        if (this.state is States.Gone)
+        {
+            this.Position = this.startPosition;
+            AllSpritesPlay("recover");
+            Audio.Play(SFX.game_10_puffer_reform, this.Position);
         }
 
-        #region State gotos
+        this.Speed = this.prevLiftSpeed = Vector2.Zero;
 
-        private void GotoGone() {
-            SetBowlVisible(false);
+        if (!CollideCheck<Solid>(this.Position + Vector2.UnitY))
+            this.noGravityTimer = 0.25f;
 
-            Vector2 control = Position + (startPosition - Position) * 0.5f;
+        this.state = States.Crystal;
+    }
 
-            if (Vector2.DistanceSquared(startPosition, Position) > 100f) {
-                if (Math.Abs(Position.Y - startPosition.Y) > Math.Abs(Position.X - startPosition.X))
-                    control.X += Position.X > startPosition.X ? -24 : 24;
-                else
-                    control.Y += Position.Y > startPosition.Y ? -24f : 24;
-            }
+    #endregion
 
-            returnCurve = new SimpleCurve(Position, startPosition, control);
-            goneTimer = 2.5f;
-
-            state = States.Gone;
-
-            Collidable = false;
-            Collider = null;
-        }
-
-        private void GotoCrystal() {
-            SetBowlVisible(true);
-
-            fused = false;
-
-            Add(Hold);
-            Collider = new Hitbox(8f, 10f, -4f, -10f);
-
-            facing = Facings.Right;
-
-            if (state == States.Gone) {
-                Position = startPosition;
-                AllSpritesPlay("recover");
-                Audio.Play(SFX.game_10_puffer_reform, Position);
-            }
-
-            Speed = prevLiftSpeed = Vector2.Zero;
-
-            if (!CollideCheck<Solid>(Position + Vector2.UnitY))
-                noGravityTimer = 0.25f;
-
-            state = States.Crystal;
-        }
-
-        #endregion
-
-        private bool CollidePufferBarrierCheck() {
-            foreach (PufferBarrier barrier in Scene.Tracker.GetEntities<PufferBarrier>()) {
-                barrier.Collidable = true;
-                if (CollideCheck(barrier)) {
-                    barrier.OnTouchPuffer();
-                    barrier.Collidable = false;
-                    return true;
-                }
+    private bool CollidePufferBarrierCheck()
+    {
+        foreach (PufferBarrier barrier in this.Scene.Tracker.GetEntities<PufferBarrier>())
+        {
+            barrier.Collidable = true;
+            if (CollideCheck(barrier))
+            {
+                barrier.OnTouchPuffer();
                 barrier.Collidable = false;
+                return true;
             }
-
-            return false;
+            barrier.Collidable = false;
         }
 
-        private void PlayerThrowSelf(Player player) {
-            if (player?.Holding?.Entity == this)
-                player.Throw();
-        }
+        return false;
+    }
 
-        private void ShatterBowl() {
-            Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
-            Level level = SceneAs<Level>();
-            level.Shake(0.175f);
+    private void PlayerThrowSelf(Player player)
+    {
+        if (player?.Holding?.Entity == this)
+            player.Throw();
+    }
 
-            for (int i = 0; i < 10; i++)
-                level.ParticlesFG.Emit(P_Shatter, 1, Center, Vector2.One * 7f, Calc.Random.NextFloat() * (float)Math.PI * 2);
-            for (float t = 0f; t < (float)Math.PI * 2f; t += 0.17453292f)
-                level.Particles.Emit(P_Crystal, Center + (Vector2.UnitY * -6), t);
-        }
+    private void ShatterBowl()
+    {
+        Input.Rumble(RumbleStrength.Strong, RumbleLength.Short);
+        Level level = SceneAs<Level>();
+        level.Shake(0.175f);
 
-        public override void Update() {
-            base.Update();
+        for (int i = 0; i < 10; i++)
+            level.ParticlesFG.Emit(P_Shatter, 1, this.Center, Vector2.One * 7f, Calc.Random.NextFloat() * (float) Math.PI * 2);
+        for (float t = 0f; t < (float) Math.PI * 2f; t += 0.17453292f)
+            level.Particles.Emit(P_Crystal, this.Center + Vector2.UnitY * -6, t);
+    }
 
-            eyeSpin = Calc.Approach(eyeSpin, 0f, Engine.DeltaTime * 1.5f);
-            scale = Calc.Approach(scale, Vector2.One, Engine.DeltaTime);
+    public override void Update()
+    {
+        base.Update();
 
-            if (state != States.Gone && cantExplodeTimer > 0f)
-                cantExplodeTimer -= Engine.DeltaTime;
+        this.eyeSpin = Calc.Approach(this.eyeSpin, 0f, Engine.DeltaTime * 1.5f);
+        this.scale = Calc.Approach(this.scale, Vector2.One, Engine.DeltaTime);
 
-            if (shatterTimer > 0f)
-                shatterTimer -= 1.5f * Engine.DeltaTime;
+        if (this.state != States.Gone && this.cantExplodeTimer > 0f)
+            this.cantExplodeTimer -= Engine.DeltaTime;
 
-            Player player = Scene.Tracker.GetEntity<Player>();
-            if (player is not null)
-                lastPlayerPos = player.Center;
+        if (this.shatterTimer > 0f)
+            this.shatterTimer -= 1.5f * Engine.DeltaTime;
 
-            switch (state) {
-                default:
-                    break;
+        Player player = this.Scene.Tracker.GetEntity<Player>();
+        if (player is not null)
+            this.lastPlayerPos = player.Center;
 
-                case States.Crystal: {
-                    if (swatTimer > 0f)
-                        swatTimer -= Engine.DeltaTime;
+        switch (this.state)
+        {
+            default:
+                break;
 
-                    hardVerticalHitSoundCooldown -= Engine.DeltaTime;
-                    Depth = Depths.TheoCrystal;
+            case States.Crystal:
+            {
+                if (this.swatTimer > 0f)
+                    this.swatTimer -= Engine.DeltaTime;
 
-                    if (fused) {
-                        if (CollideCheck<Water>()) {
-                            fused = false;
-                            Audio.Play(SFX.game_10_puffer_shrink, Position);
-                            puffer.Play("unalert");
-                        }
-                    } else {
-                        if (CollidePufferBarrierCheck()) {
-                            fused = true;
-                            explodeTimeLeft = explodeTimer;
-                            Audio.Play(SFX.game_10_puffer_expand, Position);
-                            puffer.Play("alert");
-                        }
+                this.hardVerticalHitSoundCooldown -= Engine.DeltaTime;
+                this.Depth = Depths.TheoCrystal;
+
+                if (this.fused)
+                {
+                    if (CollideCheck<Water>())
+                    {
+                        this.fused = false;
+                        Audio.Play(SFX.game_10_puffer_shrink, this.Position);
+                        this.puffer.Play("unalert");
+                    }
+                }
+                else
+                {
+                    if (CollidePufferBarrierCheck())
+                    {
+                        this.fused = true;
+                        this.explodeTimeLeft = this.explodeTime;
+                        Audio.Play(SFX.game_10_puffer_expand, this.Position);
+                        this.puffer.Play("alert");
+                    }
+                }
+
+                if (this.fused)
+                {
+                    if (this.explodeTimeLeft > 0f)
+                        this.explodeTimeLeft -= Engine.DeltaTime;
+
+                    if (this.explodeTimeLeft <= 0f)
+                    {
+                        GotoGone();
+                        ShatterBowl();
+                        Explode();
+                        PlayerThrowSelf(player);
+                        return;
+                    }
+                }
+
+                if (this.chainExplode)
+                {
+                    if (this.chainTimer > 0f)
+                    {
+                        this.chainTimer -= Engine.DeltaTime;
                     }
 
-                    if (fused) {
-                        if (explodeTimeLeft > 0f)
-                            explodeTimeLeft -= Engine.DeltaTime;
+                    if (this.chainTimer <= 0f)
+                    {
+                        this.chainTimer = ChainExplosionDelay;
+                        this.chainExplode = false;
+                        GotoGone();
+                        ShatterBowl();
+                        Explode();
+                        PlayerThrowSelf(player);
+                        return;
+                    }
+                }
 
-                        if (explodeTimeLeft <= 0f) {
-                            GotoGone();
-                            ShatterBowl();
+                if (this.Hold.IsHeld)
+                {
+                    this.prevLiftSpeed = Vector2.Zero;
+                    this.noGravityTimer = 0f;
+                }
+                else
+                {
+                    bool inWater = CollideCheck<Water>(this.Position + Vector2.UnitY * -8);
+
+                    if (OnGround())
+                    {
+                        float target = (!OnGround(this.Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(this.Position - Vector2.UnitX * 3f) ? 0f : (-20f));
+                        this.Speed.X = Calc.Approach(this.Speed.X, target, 800f * Engine.DeltaTime);
+
+                        Vector2 liftSpeed = this.LiftSpeed;
+                        if (liftSpeed == Vector2.Zero && this.prevLiftSpeed != Vector2.Zero)
+                        {
+                            this.Speed = this.prevLiftSpeed;
+                            this.prevLiftSpeed = Vector2.Zero;
+                            this.Speed.Y = Math.Min(this.Speed.Y * 0.6f, 0f);
+
+                            if (this.Speed.X != 0f && this.Speed.Y == 0f)
+                                this.Speed.Y = -60f;
+                            if (this.Speed.Y < 0f)
+                                this.noGravityTimer = 0.15f;
+                        }
+                        else
+                        {
+                            this.prevLiftSpeed = liftSpeed;
+                            if (liftSpeed.Y < 0f && this.Speed.Y < 0f)
+                                this.Speed.Y = 0f;
+                        }
+
+                        if (inWater)
+                            this.Speed.Y = Calc.Approach(this.Speed.Y, -30, 800f * Engine.DeltaTime * 0.8f);
+
+                    }
+                    else if (this.Hold.ShouldHaveGravity)
+                    {
+                        float gravityRate = Math.Abs(this.Speed.Y) <= 30f ? 400 : 800;
+                        float frictionRate = this.Speed.Y < 0f ? 175 : 350;
+
+                        this.Speed.X = Calc.Approach(this.Speed.X, 0f, frictionRate * Engine.DeltaTime);
+                        if (this.noGravityTimer > 0f)
+                            this.noGravityTimer -= Engine.DeltaTime;
+                        else
+                            this.Speed.Y = Calc.Approach(this.Speed.Y, inWater ? -30f : 200f, gravityRate * Engine.DeltaTime * (inWater ? 0.7f : 1));
+                    }
+
+                    this.previousPosition = this.ExactPosition;
+
+                    MoveH(this.Speed.X * Engine.DeltaTime, this.onCollideH);
+                    MoveV(this.Speed.Y * Engine.DeltaTime, this.onCollideV);
+
+                    if (!this.Level.Transitioning)
+                    {
+                        if (this.Center.X > this.Level.Bounds.Right)
+                        {
+                            MoveH(32f * Engine.DeltaTime);
+                            if (this.Left - 8f > this.Level.Bounds.Right)
+                                RemoveSelf();
+                        }
+                        else if (this.Left < this.Level.Bounds.Left)
+                        {
+                            this.Left = this.Level.Bounds.Left;
+                            this.Speed.X *= -0.4f;
+                        }
+                        else if (this.Top < this.Level.Bounds.Top - 4)
+                        {
+                            this.Top = this.Level.Bounds.Top + 4;
+                            this.Speed.Y = 0f;
+                        }
+                        else if (this.Top > this.Level.Bounds.Bottom)
+                        {
+                            MoveV(-5);
                             Explode();
-                            PlayerThrowSelf(player);
-                            return;
-                        }
-                    }
-
-                    if (chainExplode) {
-                        if (chainTimer > 0f) {
-                            chainTimer -= Engine.DeltaTime;
-                        }
-
-                        if (chainTimer <= 0f) {
-                            chainTimer = ChainExplosionDelay;
-                            chainExplode = false;
                             GotoGone();
-                            ShatterBowl();
-                            Explode();
-                            PlayerThrowSelf(player);
-                            return;
                         }
+
+                        if (this.X < this.Level.Bounds.Left + 10)
+                            MoveH(32f * Engine.DeltaTime);
                     }
 
-                    if (Hold.IsHeld) {
-                        prevLiftSpeed = Vector2.Zero;
-                        noGravityTimer = 0f;
-                    } else {
-                        bool inWater = CollideCheck<Water>(Position + Vector2.UnitY * -8);
-
-                        if (OnGround()) {
-                            float target = (!OnGround(Position + Vector2.UnitX * 3f)) ? 20f : (OnGround(Position - Vector2.UnitX * 3f) ? 0f : (-20f));
-                            Speed.X = Calc.Approach(Speed.X, target, 800f * Engine.DeltaTime);
-
-                            Vector2 liftSpeed = LiftSpeed;
-                            if (liftSpeed == Vector2.Zero && prevLiftSpeed != Vector2.Zero) {
-                                Speed = prevLiftSpeed;
-                                prevLiftSpeed = Vector2.Zero;
-                                Speed.Y = Math.Min(Speed.Y * 0.6f, 0f);
-
-                                if (Speed.X != 0f && Speed.Y == 0f)
-                                    Speed.Y = -60f;
-                                if (Speed.Y < 0f)
-                                    noGravityTimer = 0.15f;
-                            } else {
-                                prevLiftSpeed = liftSpeed;
-                                if (liftSpeed.Y < 0f && Speed.Y < 0f)
-                                    Speed.Y = 0f;
-                            }
-
-                            if (inWater)
-                                Speed.Y = Calc.Approach(Speed.Y, -30, 800f * Engine.DeltaTime * 0.8f);
-
-                        } else if (Hold.ShouldHaveGravity) {
-                            float gravityRate = Math.Abs(Speed.Y) <= 30f ? 400 : 800;
-                            float frictionRate = Speed.Y < 0f ? 175 : 350;
-
-                            Speed.X = Calc.Approach(Speed.X, 0f, frictionRate * Engine.DeltaTime);
-                            if (noGravityTimer > 0f)
-                                noGravityTimer -= Engine.DeltaTime;
-                            else
-                                Speed.Y = Calc.Approach(Speed.Y, inWater ? -30f : 200f, gravityRate * Engine.DeltaTime * (inWater ? 0.7f : 1));
-                        }
-
-                        previousPosition = ExactPosition;
-
-                        MoveH(Speed.X * Engine.DeltaTime, onCollideH);
-                        MoveV(Speed.Y * Engine.DeltaTime, onCollideV);
-
-                        if (!Level.Transitioning) {
-                            if (Center.X > Level.Bounds.Right) {
-                                MoveH(32f * Engine.DeltaTime);
-                                if (Left - 8f > Level.Bounds.Right)
-                                    RemoveSelf();
-                            } else if (Left < Level.Bounds.Left) {
-                                Left = Level.Bounds.Left;
-                                Speed.X *= -0.4f;
-                            } else if (Top < Level.Bounds.Top - 4) {
-                                Top = Level.Bounds.Top + 4;
-                                Speed.Y = 0f;
-                            } else if (Top > Level.Bounds.Bottom) {
-                                MoveV(-5);
-                                Explode();
-                                GotoGone();
-                            }
-                            if (X < Level.Bounds.Left + 10)
-                                MoveH(32f * Engine.DeltaTime);
-                        }
-
-                        if (player is not null) {
-                            TempleGate templeGate = CollideFirst<TempleGate>();
-                            if (templeGate is not null) {
-                                templeGate.Collidable = false;
-                                MoveH(Math.Sign(player.X - X) * 32 * Engine.DeltaTime);
-                                templeGate.Collidable = true;
-                            }
+                    if (player is not null)
+                    {
+                        TempleGate templeGate = CollideFirst<TempleGate>();
+                        if (templeGate is not null)
+                        {
+                            templeGate.Collidable = false;
+                            MoveH(Math.Sign(player.X - this.X) * 32 * Engine.DeltaTime);
+                            templeGate.Collidable = true;
                         }
                     }
-
-                    Hold.CheckAgainstColliders();
-                    if (hitSeeker is not null && swatTimer <= 0f && !hitSeeker.Check(Hold))
-                        hitSeeker = null;
-                    break;
                 }
 
-                case States.Gone: {
-                    float prev = goneTimer;
-                    goneTimer -= Engine.DeltaTime;
+                this.Hold.CheckAgainstColliders();
+                if (this.hitSeeker is not null && this.swatTimer <= 0f && !this.hitSeeker.Check(this.Hold))
+                    this.hitSeeker = null;
+                break;
+            }
 
-                    if (goneTimer <= 0.5f) {
-                        if (prev > 0.5f && returnCurve.GetLengthParametric(8) > 8f)
-                            Audio.Play(SFX.game_10_puffer_return, Position);
-                        Position = returnCurve.GetPoint(Ease.CubeInOut(Calc.ClampedMap(goneTimer, 0.5f, 0f)));
-                    }
+            case States.Gone:
+            {
+                float prev = this.goneTimer;
+                this.goneTimer -= Engine.DeltaTime;
 
-                    if (goneTimer <= 2.1f && prev > 2.1f && noRespawn)
-                        RemoveSelf();
-
-                    if (goneTimer <= 0f) {
-                        Visible = Collidable = true;
-                        GotoCrystal();
-                    }
-                    break;
+                if (this.goneTimer <= 0.5f)
+                {
+                    if (prev > 0.5f && this.returnCurve.GetLengthParametric(8) > 8f)
+                        Audio.Play(SFX.game_10_puffer_return, this.Position);
+                    this.Position = this.returnCurve.GetPoint(Ease.CubeInOut(Calc.ClampedMap(this.goneTimer, 0.5f, 0f)));
                 }
+
+                if (this.goneTimer <= 2.1f && prev > 2.1f && this.noRespawn)
+                    RemoveSelf();
+
+                if (this.goneTimer <= 0f)
+                {
+                    this.Visible = this.Collidable = true;
+                    GotoCrystal();
+                }
+                break;
             }
         }
+    }
 
-        public override void Render() {
-            puffer.Scale = scale * (1f + inflateWiggler.Value * 0.4f);
-            puffer.FlipX = false;
+    public override void Render()
+    {
+        this.puffer.Scale = this.scale * (1f + this.inflateWiggler.Value * 0.4f);
+        this.puffer.FlipX = false;
 
-            Vector2 position = Position;
-            Position.Y -= 6;
-            Position = position;
+        Vector2 position = this.Position;
+        this.Position.Y -= 6.0f;
+        this.Position = position;
 
-            base.Render();
-            if (puffer.CurrentAnimationID == "alerted") {
-                Vector2 pos = Position + (new Vector2(3f, -4) * puffer.Scale);
-                pos.X -= facing == Facings.Left ? 9 : 0;
+        base.Render();
 
-                Vector2 to = lastPlayerPos + new Vector2(0f, -4f);
-                Vector2 eyeOffset = Calc.AngleToVector(Calc.Angle(pos, to) + eyeSpin * ((float)Math.PI * 2f) * 2f, 1f);
-                Vector2 eyePos = pos + new Vector2((float)Math.Round(eyeOffset.X) - 1, (float)Math.Round(Calc.ClampedMap(eyeOffset.Y, -1f, 1f, -1f, 2f)) - 9);
+        if (this.puffer.CurrentAnimationID is "alerted")
+        {
+            Vector2 pos = this.Position + new Vector2(3f, -4) * this.puffer.Scale;
+            pos.X -= this.facing == Facings.Left ? 9 : 0;
 
-                Draw.Point(eyePos, Color.Black);
-            }
+            Vector2 to = this.lastPlayerPos + new Vector2(0f, -4f);
+            Vector2 eyeOffset = Calc.AngleToVector(Calc.Angle(pos, to) + this.eyeSpin * ((float) Math.PI * 2f) * 2f, 1f);
+            Vector2 eyePos = pos + new Vector2((float) Math.Round(eyeOffset.X) - 1, (float) Math.Round(Calc.ClampedMap(eyeOffset.Y, -1f, 1f, -1f, 2f)) - 9);
 
-            if (fused && explodeTimer != 0) {
-                float r = explodeTimeLeft / explodeTimer;
-                for (float a = 0f; a < Math.PI * 2 * r; a += 0.06f) {
-                    Vector2 p = Center + new Vector2((float)Math.Sin(a), -(float)Math.Cos(a)) * 16 - Vector2.UnitY * 5 - Vector2.UnitX;
-                    Draw.Point(p, Color.Lerp(Color.OrangeRed, Color.LawnGreen, a / (float)Math.PI));
-                }
-            }
+            Draw.Point(eyePos, Color.Black);
         }
 
-        public static void InitializeParticles() {
-            P_Shatter = new ParticleType(Refill.P_Shatter) {
-                Color = Color.White,
-                Color2 = Color.LightBlue,
-                ColorMode = ParticleType.ColorModes.Blink,
-                SpeedMax = 75f,
-                SpeedMin = 0f,
-            };
-            P_Crystal = new ParticleType(Seeker.P_Regen) {
-                SpeedMax = 40f,
-                Acceleration = Vector2.UnitY * 30
-            };
+        if (this.fused && this.explodeTime != 0)
+        {
+            float r = this.explodeTimeLeft / this.explodeTime;
+            for (float a = 0f; a < Math.PI * 2 * r; a += 0.06f)
+            {
+                Vector2 p = this.Center + new Vector2((float) Math.Sin(a), -(float) Math.Cos(a)) * 16 - Vector2.UnitY * 5 - Vector2.UnitX;
+                Draw.Point(p, Color.Lerp(Color.OrangeRed, Color.LawnGreen, a / (float) Math.PI));
+            }
+        }
+    }
+
+    public static void InitializeParticles()
+    {
+        P_Shatter = new ParticleType(Refill.P_Shatter)
+        {
+            Color = Color.White,
+            Color2 = Color.LightBlue,
+            ColorMode = ParticleType.ColorModes.Blink,
+            SpeedMax = 75f,
+            SpeedMin = 0f,
+        };
+
+        P_Crystal = new ParticleType(Seeker.P_Regen)
+        {
+            SpeedMax = 40f,
+            Acceleration = Vector2.UnitY * 30
+        };
+    }
+
+    public static class Hooks
+    {
+        public static void Hook()
+        {
+            On.Celeste.Spring.ctor_Vector2_Orientations_bool += Spring_orig;
+            On.Celeste.Puffer.Update += Puffer_Update;
         }
 
-        public static class Hooks {
-            public static void Hook() {
-                On.Celeste.Spring.ctor_Vector2_Orientations_bool += Spring_orig;
-                On.Celeste.Puffer.Update += Puffer_Update;
+        public static void Unhook()
+        {
+            On.Celeste.Spring.ctor_Vector2_Orientations_bool -= Spring_orig;
+            On.Celeste.Puffer.Update -= Puffer_Update;
+        }
+
+        private static void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self)
+        {
+            orig(self);
+
+            if (!self.Collidable)
+                return;
+
+            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>())
+                barrier.Collidable = true;
+
+            PufferBarrier collided = self.CollideFirst<PufferBarrier>();
+            if (collided is not null)
+            {
+                collided.OnTouchPuffer();
+
+                VortexHelperModule.Puffer_Explode.Invoke(self, new object[] { });
+                VortexHelperModule.Puffer_GotoGone.Invoke(self, new object[] { });
             }
 
-            public static void Unhook() {
-                On.Celeste.Spring.ctor_Vector2_Orientations_bool -= Spring_orig;
-                On.Celeste.Puffer.Update -= Puffer_Update;
-            }
+            foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>())
+                barrier.Collidable = false;
+        }
 
-            private static void Puffer_Update(On.Celeste.Puffer.orig_Update orig, Puffer self) {
-                orig(self);
-                if (!self.Collidable) {
-                    return;
-                }
+        private static void Spring_orig(On.Celeste.Spring.orig_ctor_Vector2_Orientations_bool orig, Spring self, Vector2 position, Spring.Orientations orientation, bool playerCanUse)
+        {
+            orig(self, position, orientation, playerCanUse);
+            self.Add(new BowlPufferCollider(Spring_OnBowlPuffer));
+        }
 
-                foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>()) {
-                    barrier.Collidable = true;
-                }
-
-                PufferBarrier collided = self.CollideFirst<PufferBarrier>();
-                if (collided != null) {
-                    collided.OnTouchPuffer();
-
-                    VortexHelperModule.Puffer_Explode.Invoke(self, new object[] { });
-                    VortexHelperModule.Puffer_GotoGone.Invoke(self, new object[] { });
-                }
-
-                foreach (PufferBarrier barrier in self.Scene.Tracker.GetEntities<PufferBarrier>()) {
-                    barrier.Collidable = false;
-                }
-            }
-
-            private static void Spring_orig(On.Celeste.Spring.orig_ctor_Vector2_Orientations_bool orig, Spring self, Vector2 position, Spring.Orientations orientation, bool playerCanUse) {
-                orig(self, position, orientation, playerCanUse);
-                self.Add(new BowlPuffer.BowlPufferCollider(Spring_OnBowlPuffer));
-            }
-
-            private static void Spring_OnBowlPuffer(BowlPuffer puffer, Spring self) {
-                puffer.HitSpring(self);
-                VortexHelperModule.Spring_BounceAnimate.Invoke(self, new object[] { });
-            }
+        private static void Spring_OnBowlPuffer(BowlPuffer puffer, Spring self)
+        {
+            puffer.HitSpring(self);
+            VortexHelperModule.Spring_BounceAnimate.Invoke(self, new object[] { });
         }
     }
 }
