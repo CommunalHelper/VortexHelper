@@ -251,7 +251,12 @@ public class FloorBooster : Entity
         {
             // Fix crashes with vanilla entities that refill the dash.
             if (self.Scene is null || self.Dead)
-                return false;
+                return orig(self);
+
+            // Prevent blocking refill on room transitions
+            Level level = self.Scene as Level;
+            if (level.Transitioning)
+                return orig(self);
 
             foreach (FloorBooster entity in self.Scene.Tracker.GetEntities<FloorBooster>())
             {
@@ -259,7 +264,8 @@ public class FloorBooster : Entity
                     continue;
 
                 if (self.CollideCheck(entity) && self.OnGround()
-                    && self.Bottom <= entity.Bottom && entity.NoRefillsOnIce)
+                    && self.Bottom <= entity.Bottom
+                    && entity.NoRefillsOnIce)
                     return false;
             }
 
