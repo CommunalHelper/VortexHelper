@@ -9,7 +9,8 @@ purpleBooster.placements = {
     {
         name = "purple",
         data = {
-            lavender = false
+            lavender = false,
+            CanWallbounce = false
         }
     },
     {

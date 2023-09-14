@@ -6,7 +6,10 @@ using ..Ahorn, Maple
 const placements = Ahorn.PlacementDict(
     "Booster (Purple) (Vortex Helper)" => Ahorn.EntityPlacement(
         PurpleBooster,
-        "point"
+        "point",
+        Dict{String,Any} (
+            "CanWallbounce" => false
+        )
     ),
     "Booster (Lavender) (Vortex Helper)" => Ahorn.EntityPlacement(
         PurpleBooster,

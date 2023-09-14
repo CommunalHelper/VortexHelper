@@ -50,7 +50,7 @@ public class PurpleBooster : Entity
     public readonly bool CanWallbounce;
     public PurpleBooster(EntityData data, Vector2 offset)
         : this(data.Position + offset) {
-        CanWallbounce = data.Bool("CanWallbounce", true);
+        CanWallbounce = data.Bool("CanWallbounce", false);
     }
 
     public PurpleBooster(Vector2 position)
@@ -473,7 +473,7 @@ public class PurpleBooster : Entity
             Vector2 vec = origin + Vector2.UnitY * 6f + player.DashDir * 60f * (float) Math.Sin(t * Math.PI);
 
             playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost = (t > .6f) ? (t - .5f) * 200f * -player.DashDir : Vector2.Zero);
-            Console.WriteLine(earlyExitBoost);
+            
             if (player.CollideCheck<Solid>(vec))
             {
                 player.StateMachine.State = Player.StNormal;
