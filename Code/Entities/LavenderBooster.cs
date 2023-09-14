@@ -60,7 +60,7 @@ public class LavenderBooster : Booster
             {
                 Audio.Play(SFX.game_05_redbooster_end, player.Center);
                 PurpleBooster.LaunchPlayerParticles(player, player.DashDir, P_BurstExplodeLavender);
-                PurpleBooster.PurpleBoosterExplodeLaunch(player, player.GetData(), self.Center - player.DashDir, null, -1f);
+                PurpleBooster.PurpleBoosterExplodeLaunch(player, DynamicData.For(player), self.Center - player.DashDir, null, -1f);
             }
         }
 

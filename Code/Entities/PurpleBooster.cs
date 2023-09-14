@@ -3,7 +3,10 @@ using Celeste.Mod.Meta;
 using Celeste.Mod.VortexHelper.Misc;
 using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using System;
 using System.Collections;
@@ -15,6 +18,7 @@ namespace Celeste.Mod.VortexHelper.Entities;
 public class PurpleBooster : Entity
 {
     internal const string POSSIBLE_EARLY_DASHSPEED = "purpleBoostPossibleEarlyDashSpeed";
+    internal const string CAN_WALLBOUNCE_FROM_SLINGSHOT = "purpleBoostCanWallBounce";
 
     private readonly Sprite sprite;
     private readonly Wiggler wiggler;
@@ -43,8 +47,11 @@ public class PurpleBooster : Entity
     public static readonly ParticleType P_BurstExplode = new(Booster.P_Burst);
 
     private readonly SoundSource loopingSfx;
+    public readonly bool CanWallbounce;
     public PurpleBooster(EntityData data, Vector2 offset)
-        : this(data.Position + offset) { }
+        : this(data.Position + offset) {
+        CanWallbounce = data.Bool("CanWallbounce", true);
+    }
 
     public PurpleBooster(Vector2 position)
         : base(position)
@@ -124,8 +131,9 @@ public class PurpleBooster : Entity
     {
         player.StateMachine.State = VortexHelperModule.PurpleBoosterState;
         player.Speed = Vector2.Zero;
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
         playerData.Set("boostTarget", booster.Center);
+        playerData.Set(CAN_WALLBOUNCE_FROM_SLINGSHOT, booster.CanWallbounce);
         booster.StartedBoosting = true;
     }
 
@@ -352,7 +360,7 @@ public class PurpleBooster : Entity
     public static int PurpleBoostUpdate()
     {
         Util.TryGetPlayer(out Player player);
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
 
         Vector2 boostTarget = playerData.Get<Vector2>("boostTarget");
         Vector2 value = Input.Aim.Value * 3f;
@@ -385,10 +393,9 @@ public class PurpleBooster : Entity
     public static void PurpleBoostEnd()
     {
         Util.TryGetPlayer(out Player player);
-
-        Vector2 boostTarget = player.GetData().Get<Vector2>("boostTarget");
+        DynamicData playerData = DynamicData.For(player);
+        Vector2 boostTarget = playerData.Get<Vector2>("boostTarget");
         Vector2 vector = (boostTarget - player.Collider.Center).Floor();
-
         player.MoveToX(vector.X, null);
         player.MoveToY(vector.Y, null);
     }
@@ -407,7 +414,7 @@ public class PurpleBooster : Entity
         Celeste.Freeze(0.05f); // this freeze makes fastbubbling much more lenient
 
         Util.TryGetPlayer(out Player player);
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
         player.DashDir = Input.GetAimVector(player.Facing);
         playerData.Set(POSSIBLE_EARLY_DASHSPEED, Vector2.Zero);
 
@@ -426,16 +433,29 @@ public class PurpleBooster : Entity
 
     public static int PurpleDashingUpdate()
     {
+        Util.TryGetPlayer(out Player player);
+        DynamicData playerData = DynamicData.For(player);
         if (Input.DashPressed || Input.CrouchDashPressed)
         {
-            Util.TryGetPlayer(out Player player);
-            DynData<Player> playerData = player.GetData();
 
             player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
 
             return player.StartDash();
         }
-
+        if (playerData.Get<bool>(CAN_WALLBOUNCE_FROM_SLINGSHOT) && Math.Abs(player.DashDir.X) <= 0.02 &&
+            Input.Jump.Pressed && player.CanUnDuck &&
+            (player.DashDir.Y < 0 ? playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED).Y == 0 : playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED).Y < 0))
+        {
+            if ((bool)Util.player_WallJumpCheck.Invoke(player, 1))
+            {
+                Util.player_SuperWallJump.Invoke(player,-1);
+                return 0;
+            }else if ((bool) Util.player_WallJumpCheck.Invoke(player, -1))
+            {
+                Util.player_SuperWallJump.Invoke(player, 1);
+                return 0;
+            }
+        }
         return VortexHelperModule.PurpleBoosterDashState;
     }
 
@@ -443,7 +463,7 @@ public class PurpleBooster : Entity
     {
         float t = 0f;
         Util.TryGetPlayer(out Player player);
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
         Vector2 origin = playerData.Get<Vector2>("boostTarget");
 
         Vector2 earlyExitBoost;
@@ -453,7 +473,7 @@ public class PurpleBooster : Entity
             Vector2 vec = origin + Vector2.UnitY * 6f + player.DashDir * 60f * (float) Math.Sin(t * Math.PI);
 
             playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost = (t > .6f) ? (t - .5f) * 200f * -player.DashDir : Vector2.Zero);
-
+            Console.WriteLine(earlyExitBoost);
             if (player.CollideCheck<Solid>(vec))
             {
                 player.StateMachine.State = Player.StNormal;
@@ -467,11 +487,17 @@ public class PurpleBooster : Entity
         PurpleBoosterExplodeLaunch(player, playerData, player.Center - player.DashDir, origin);
     }
 
-    public static void PurpleBoosterExplodeLaunch(Player player, DynData<Player> playerData, Vector2 from, Vector2? origin, float factor = 1f)
+    public static void PurpleDashingEnd()
+    {
+        Util.TryGetPlayer(out Player player);
+        DynamicData playerData = DynamicData.For(player);
+        playerData.Set(CAN_WALLBOUNCE_FROM_SLINGSHOT, false);
+    }
+    public static void PurpleBoosterExplodeLaunch(Player player, DynamicData playerData, Vector2 from, Vector2? origin, float factor = 1f)
     {
         Input.Rumble(RumbleStrength.Strong, RumbleLength.Medium);
         Celeste.Freeze(0.1f);
-        playerData.Set<float?>("launchApproachX", null);
+        playerData.Set("launchApproachX", null);
         Level level = player.SceneAs<Level>();
 
         if (origin is not null)
@@ -501,14 +527,18 @@ public class PurpleBooster : Entity
 
     internal static class Hooks
     {
+
         public static void Hook()
         {
             On.Celeste.Player.ctor += Player_ctor;
+            IL.Celeste.Player.WallJumpCheck += Player_WallJumpCheck;
         }
+
 
         public static void Unhook()
         {
             On.Celeste.Player.ctor -= Player_ctor;
+            IL.Celeste.Player.WallJumpCheck -= Player_WallJumpCheck;
         }
 
         private static void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode)
@@ -519,7 +549,36 @@ public class PurpleBooster : Entity
             VortexHelperModule.PurpleBoosterState = self.StateMachine.AddState(PurpleBoostUpdate, PurpleBoostCoroutine, PurpleBoostBegin, PurpleBoostEnd);
 
             // Custom Purple Booster State (Arc Motion)
-            VortexHelperModule.PurpleBoosterDashState = self.StateMachine.AddState(PurpleDashingUpdate, PurpleDashingCoroutine, PurpleDashingBegin);
+            VortexHelperModule.PurpleBoosterDashState = self.StateMachine.AddState(PurpleDashingUpdate, PurpleDashingCoroutine, PurpleDashingBegin, PurpleDashingEnd);
         }
+
+        private static void Player_WallJumpCheck(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il);
+            if (cursor.TryGotoNext(MoveType.After, i => i.MatchCallvirt<Player>("get_DashAttacking")))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate<Func<bool, Player, bool>>((b, p) =>
+                {
+                    if (b) return true;
+                    try { if (DynamicData.For(p).TryGet<bool>(CAN_WALLBOUNCE_FROM_SLINGSHOT, out bool c) && c) return true; }
+                    catch (NullReferenceException) { return false; }
+                    return false;
+                });
+            }
+            if(cursor.TryGotoNext(MoveType.After, i => i.MatchLdcR4(-1) && i.Next.MatchCeq()))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate<Func<float, Player, float>>((f, p) =>
+                {
+                    try { if (DynamicData.For(p).TryGet<bool>(CAN_WALLBOUNCE_FROM_SLINGSHOT, out bool c) && c) return p.DashDir.Y; }
+                    catch (NullReferenceException) { return f; }
+                    return f;
+                });
+            }
+
+
+        }
+
     }
 }

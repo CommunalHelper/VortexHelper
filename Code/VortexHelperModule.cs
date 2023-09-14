@@ -67,6 +67,8 @@ public class VortexHelperModule : EverestModule
         PufferBarrierRenderer.Hooks.Hook();
         StaticMoverWithLiftSpeed.Hooks.Hook();
         MiscHooks.Hook();
+
+        Util.LoadDelegates();
     }
 
     public override void Unload()
