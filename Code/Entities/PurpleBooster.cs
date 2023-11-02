@@ -440,9 +440,6 @@ public class PurpleBooster : Entity
         {
             if (QoL) player.Speed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
             else player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
-
-            Console.WriteLine(player.Speed);
-
             return player.StartDash();
         }
         if (QoL && Math.Abs(player.DashDir.X) <= 0.02 &&
@@ -495,7 +492,6 @@ public class PurpleBooster : Entity
             {
                 earlyExitBoost = (t - .5f) * 200f * -player.DashDir;
             }
-            Console.WriteLine(t + "," + earlyExitBoost);
             playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost);
 
             if (player.CollideCheck<Solid>(vec))
