@@ -49,6 +49,9 @@ placements.entities.VortexHelper/Lilly.tooltips.maxLength=The maximum distance a
 
 # Purple Booster
 placements.entities.VortexHelper/PurpleBooster.tooltips.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
+placements.entities.VortexHelper/PurpleBooster.names.QoL=Version 2
+placements.entities.VortexHelper/PurpleBooster.tooltips.QoL=Enables Wallbouncing during the windup animation.\nFixes speedboost not applying when dashing early from booster.\nReduces Freeze Timer upon launch exit and ensures a shorter dashCooldownTimer.
+
 
 # Switch Block
 placements.entities.VortexHelper/SwitchBlock.tooltips.index=Changes the index and color of this Switch Block.

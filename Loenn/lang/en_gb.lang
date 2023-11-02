@@ -70,6 +70,8 @@ entities.VortexHelper/PufferBarrier.placements.name.puffer_barrier=Puffer Barrie
 entities.VortexHelper/PurpleBooster.placements.name.purple=Booster (Purple)
 entities.VortexHelper/PurpleBooster.placements.name.lavender=Booster (Lavender)
 entities.VortexHelper/PurpleBooster.attributes.description.lavender=Whether the booster should instead be lavender in color, and launch the player forward instead of arcing back.
+entities.VortexHelper/PurpleBooster.attributes.name.QoL=Version 2
+entities.VortexHelper/PurpleBooster.attributes.description.QoL=Enables Wallbouncing during the windup animation.\nFixes speedboost not applying when dashing early from booster.\nReduces Freeze Timer upon launch exit and ensures a shorter dashCooldownTimer.
 
 # Switch Block
 entities.VortexHelper/SwitchBlock.placements.name.switch_block_0=Switch Block (0 - Blue)

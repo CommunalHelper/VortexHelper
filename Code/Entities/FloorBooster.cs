@@ -324,8 +324,8 @@ public class FloorBooster : Entity
                 }
             }
 
-            if (!touchedFloorBooster)
-                floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 0f, 4f * Engine.DeltaTime);
+            if (!touchedFloorBooster && playerData?.Get("floorBoosterSpeed") is float f)
+                floorBoosterSpeed = Calc.Approach(f, 0f, 4f * Engine.DeltaTime);
             playerData.Set("floorBoosterSpeed", floorBoosterSpeed);
 
             return orig(self);
