@@ -1,6 +1,6 @@
 - Name: VortexHelper
   Version: 1.2.12
-  DLL: Code/bin/Debug/net452/VortexHelper.dll
+  DLL: Code/bin/VortexHelper.dll
   Dependencies:
     - Name: Everest
-      Version: 1.3761.0
+      Version: 1.4465.0
