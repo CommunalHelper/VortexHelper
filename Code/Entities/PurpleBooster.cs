@@ -446,13 +446,13 @@ public class PurpleBooster : Entity
             Input.Jump.Pressed && player.CanUnDuck &&
             (player.DashDir.Y < 0 ? playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED).Y == 0 : playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED).Y < 0))
         {
-            if ((bool)Util.player_WallJumpCheck.Invoke(player, 1))
+            if ((bool)Util.player_WallJumpCheck.Invoke(player, new object[1]{1}))
             {
-                Util.player_SuperWallJump.Invoke(player,-1);
+                Util.player_SuperWallJump.Invoke(player,new object[1]{-1});
                 return 0;
-            }else if ((bool) Util.player_WallJumpCheck.Invoke(player, -1))
+            }else if ((bool) Util.player_WallJumpCheck.Invoke(player, new object[1]{-1}))
             {
-                Util.player_SuperWallJump.Invoke(player, 1);
+                Util.player_SuperWallJump.Invoke(player, new object[1]{1});
                 return 0;
             }
         }
