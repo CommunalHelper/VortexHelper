@@ -465,7 +465,7 @@ public class PurpleBooster : Entity
         Util.TryGetPlayer(out Player player);
         DynamicData playerData = DynamicData.For(player);
         Vector2 origin = playerData.Get<Vector2>("boostTarget");
-        if(playerData.GET(QUALITYOFLIFEUPDATE) is bool b && b) {
+        if(playerData.Get(QUALITYOFLIFEUPDATE) is bool a && a) {
             yield return null;
             player.DashDir = lastAim;
         }
