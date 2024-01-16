@@ -9,13 +9,15 @@ purpleBooster.placements = {
     {
         name = "purple",
         data = {
-            lavender = false
+            lavender = false,
+            QoL = true
         }
     },
     {
         name = "lavender",
         data = {
-            lavender = true
+            lavender = true,
+            QoL = true
         }
     }
 }

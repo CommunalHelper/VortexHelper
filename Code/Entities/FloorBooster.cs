@@ -275,18 +275,18 @@ public class FloorBooster : Entity
         private static void Player_NormalBegin(On.Celeste.Player.orig_NormalBegin orig, Player self)
         {
             orig(self);
-            DynData<Player> playerData = self.GetData();
+            DynamicData playerData = DynamicData.For(self);
             playerData.Set("floorBoosterSpeed", 0f);
-            playerData.Set<FloorBooster>("lastFloorBooster", null);
+            playerData.Set("lastFloorBooster", null);
         }
 
         private static int Player_NormalUpdate(On.Celeste.Player.orig_NormalUpdate orig, Player self)
         {
-            DynData<Player> playerData = self.GetData();
+            DynamicData playerData = DynamicData.For(self);
 
             // thanks max480 for the bug report.
             if (!playerData.Data.ContainsKey("lastFloorBooster"))
-                playerData.Set<FloorBooster>("lastFloorBooster", null);
+                playerData.Set("lastFloorBooster", null);
 
             FloorBooster lastFloorBooster = playerData.Get<FloorBooster>("lastFloorBooster");
 
@@ -300,7 +300,7 @@ public class FloorBooster : Entity
                     self.LiftSpeed += vec / 1.6f;
                 self.Speed += vec / 1.6f;
 
-                playerData.Set<FloorBooster>("lastFloorBooster", null);
+                playerData.Set("lastFloorBooster", null);
             }
 
             bool touchedFloorBooster = false;
@@ -324,8 +324,8 @@ public class FloorBooster : Entity
                 }
             }
 
-            if (!touchedFloorBooster)
-                floorBoosterSpeed = Calc.Approach(playerData.Get<float>("floorBoosterSpeed"), 0f, 4f * Engine.DeltaTime);
+            if (!touchedFloorBooster && playerData?.Get("floorBoosterSpeed") is float f)
+                floorBoosterSpeed = Calc.Approach(f, 0f, 4f * Engine.DeltaTime);
             playerData.Set("floorBoosterSpeed", floorBoosterSpeed);
 
             return orig(self);

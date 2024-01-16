@@ -3,7 +3,10 @@ using Celeste.Mod.Meta;
 using Celeste.Mod.VortexHelper.Misc;
 using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using System;
 using System.Collections;
@@ -15,6 +18,7 @@ namespace Celeste.Mod.VortexHelper.Entities;
 public class PurpleBooster : Entity
 {
     internal const string POSSIBLE_EARLY_DASHSPEED = "purpleBoostPossibleEarlyDashSpeed";
+    internal const string QUALITYOFLIFEUPDATE = "purpleBoostQoL";
 
     private readonly Sprite sprite;
     private readonly Wiggler wiggler;
@@ -43,8 +47,11 @@ public class PurpleBooster : Entity
     public static readonly ParticleType P_BurstExplode = new(Booster.P_Burst);
 
     private readonly SoundSource loopingSfx;
+    public readonly bool QoL;
     public PurpleBooster(EntityData data, Vector2 offset)
-        : this(data.Position + offset) { }
+        : this(data.Position + offset) {
+        QoL = data.Bool("QoL");
+    }
 
     public PurpleBooster(Vector2 position)
         : base(position)
@@ -124,8 +131,9 @@ public class PurpleBooster : Entity
     {
         player.StateMachine.State = VortexHelperModule.PurpleBoosterState;
         player.Speed = Vector2.Zero;
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
         playerData.Set("boostTarget", booster.Center);
+        playerData.Set(QUALITYOFLIFEUPDATE, booster.QoL);
         booster.StartedBoosting = true;
     }
 
@@ -352,7 +360,7 @@ public class PurpleBooster : Entity
     public static int PurpleBoostUpdate()
     {
         Util.TryGetPlayer(out Player player);
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
 
         Vector2 boostTarget = playerData.Get<Vector2>("boostTarget");
         Vector2 value = Input.Aim.Value * 3f;
@@ -385,10 +393,9 @@ public class PurpleBooster : Entity
     public static void PurpleBoostEnd()
     {
         Util.TryGetPlayer(out Player player);
-
-        Vector2 boostTarget = player.GetData().Get<Vector2>("boostTarget");
+        DynamicData playerData = DynamicData.For(player);
+        Vector2 boostTarget = playerData.Get<Vector2>("boostTarget");
         Vector2 vector = (boostTarget - player.Collider.Center).Floor();
-
         player.MoveToX(vector.X, null);
         player.MoveToY(vector.Y, null);
     }
@@ -407,7 +414,7 @@ public class PurpleBooster : Entity
         Celeste.Freeze(0.05f); // this freeze makes fastbubbling much more lenient
 
         Util.TryGetPlayer(out Player player);
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
         player.DashDir = Input.GetAimVector(player.Facing);
         playerData.Set(POSSIBLE_EARLY_DASHSPEED, Vector2.Zero);
 
@@ -426,16 +433,29 @@ public class PurpleBooster : Entity
 
     public static int PurpleDashingUpdate()
     {
+        Util.TryGetPlayer(out Player player);
+        DynamicData playerData = DynamicData.For(player);
+        bool QoL = playerData.Get(QUALITYOFLIFEUPDATE) is bool b && b;
         if (Input.DashPressed || Input.CrouchDashPressed)
         {
-            Util.TryGetPlayer(out Player player);
-            DynData<Player> playerData = player.GetData();
-
-            player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
-
+            if (QoL) player.Speed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
+            else player.LiftSpeed += playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED);
             return player.StartDash();
         }
-
+        if (QoL && Math.Abs(player.DashDir.X) <= 0.02 &&
+            Input.Jump.Pressed && player.CanUnDuck &&
+            (player.DashDir.Y < 0 ? playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED).Y == 0 : playerData.Get<Vector2>(POSSIBLE_EARLY_DASHSPEED).Y < 0))
+        {
+            if ((bool)Util.player_WallJumpCheck.Invoke(player, new object[1]{1}))
+            {
+                Util.player_SuperWallJump.Invoke(player,new object[1]{-1});
+                return 0;
+            }else if ((bool) Util.player_WallJumpCheck.Invoke(player, new object[1]{-1}))
+            {
+                Util.player_SuperWallJump.Invoke(player, new object[1]{1});
+                return 0;
+            }
+        }
         return VortexHelperModule.PurpleBoosterDashState;
     }
 
@@ -443,16 +463,40 @@ public class PurpleBooster : Entity
     {
         float t = 0f;
         Util.TryGetPlayer(out Player player);
-        DynData<Player> playerData = player.GetData();
+        DynamicData playerData = DynamicData.For(player);
         Vector2 origin = playerData.Get<Vector2>("boostTarget");
+        if(playerData.Get(QUALITYOFLIFEUPDATE) is bool a && a) {
+            yield return null;
+            player.DashDir = playerData.Get<Vector2>("lastAim"); 
+        }
 
-        Vector2 earlyExitBoost;
+        Vector2 earlyExitBoost = Vector2.Zero;
         while (t < 1f)
         {
             t = Calc.Approach(t, 1.0f, Engine.DeltaTime * 1.5f);
             Vector2 vec = origin + Vector2.UnitY * 6f + player.DashDir * 60f * (float) Math.Sin(t * Math.PI);
-
-            playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost = (t > .6f) ? (t - .5f) * 200f * -player.DashDir : Vector2.Zero);
+            
+            if(playerData.Get(QUALITYOFLIFEUPDATE) is bool b && b)
+            {
+                if(t == 1f)
+                {
+                    // frame 0: mimics speed at launch exit exactly, Input.MoveX.Value == -Math.Sign(player.DashDir) ? 300 : 250
+                    earlyExitBoost = 250f * -player.DashDir;
+                    Vector2 aim = Input.GetAimVector(player.Facing).EightWayNormal().Sign();
+                    if (aim.X == Math.Sign(earlyExitBoost.X)) earlyExitBoost.X *= 1.2f;
+                    if (aim.Y == Math.Sign(earlyExitBoost.Y)) earlyExitBoost.Y *= 1.2f;
+                } else if(t > 0.93f)
+                {
+                    // frame -2 : 200 speed
+                    // frame -1 : 205 speed
+                    earlyExitBoost = (float)Math.Round(210f * t) * -player.DashDir;
+                }
+            }
+            else if (t > 0.6f)
+            {
+                earlyExitBoost = (t - .5f) * 200f * -player.DashDir;
+            }
+            playerData.Set(POSSIBLE_EARLY_DASHSPEED, earlyExitBoost);
 
             if (player.CollideCheck<Solid>(vec))
             {
@@ -467,11 +511,18 @@ public class PurpleBooster : Entity
         PurpleBoosterExplodeLaunch(player, playerData, player.Center - player.DashDir, origin);
     }
 
-    public static void PurpleBoosterExplodeLaunch(Player player, DynData<Player> playerData, Vector2 from, Vector2? origin, float factor = 1f)
+    public static void PurpleDashingEnd()
     {
+        Util.TryGetPlayer(out Player player);
+        DynamicData playerData = DynamicData.For(player);
+        playerData.Set(QUALITYOFLIFEUPDATE, false);
+    }
+    public static void PurpleBoosterExplodeLaunch(Player player, DynamicData playerData, Vector2 from, Vector2? origin, float factor = 1f)
+    {
+        bool QoL = playerData?.Get(QUALITYOFLIFEUPDATE) is bool b && b;
         Input.Rumble(RumbleStrength.Strong, RumbleLength.Medium);
-        Celeste.Freeze(0.1f);
-        playerData.Set<float?>("launchApproachX", null);
+        Celeste.Freeze(QoL ? 0.05f : 0.1f);
+        playerData.Set("launchApproachX", null);
         Level level = player.SceneAs<Level>();
 
         if (origin is not null)
@@ -493,6 +544,8 @@ public class PurpleBooster : Entity
         if (!player.Inventory.NoRefills)
             player.RefillDash();
         player.RefillStamina();
+        if (QoL && playerData?.Get("dashCooldownTimer") is float f)
+            playerData.Set("dashCooldownTimer", f > 0.06f ? 0.06f : f);
         player.StateMachine.State = Player.StLaunch;
         player.Speed *= factor;
     }
@@ -501,14 +554,18 @@ public class PurpleBooster : Entity
 
     internal static class Hooks
     {
+
         public static void Hook()
         {
             On.Celeste.Player.ctor += Player_ctor;
+            IL.Celeste.Player.WallJumpCheck += Player_WallJumpCheck;
         }
+
 
         public static void Unhook()
         {
             On.Celeste.Player.ctor -= Player_ctor;
+            IL.Celeste.Player.WallJumpCheck -= Player_WallJumpCheck;
         }
 
         private static void Player_ctor(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode)
@@ -519,7 +576,36 @@ public class PurpleBooster : Entity
             VortexHelperModule.PurpleBoosterState = self.StateMachine.AddState(PurpleBoostUpdate, PurpleBoostCoroutine, PurpleBoostBegin, PurpleBoostEnd);
 
             // Custom Purple Booster State (Arc Motion)
-            VortexHelperModule.PurpleBoosterDashState = self.StateMachine.AddState(PurpleDashingUpdate, PurpleDashingCoroutine, PurpleDashingBegin);
+            VortexHelperModule.PurpleBoosterDashState = self.StateMachine.AddState(PurpleDashingUpdate, PurpleDashingCoroutine, PurpleDashingBegin, PurpleDashingEnd);
         }
+
+        private static void Player_WallJumpCheck(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il);
+            if (cursor.TryGotoNext(MoveType.After, i => i.MatchCallvirt<Player>("get_DashAttacking")))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate<Func<bool, Player, bool>>((b, p) =>
+                {
+                    if (b) return true;
+                    try { if (DynamicData.For(p).TryGet<bool>(QUALITYOFLIFEUPDATE, out bool c) && c) return true; }
+                    catch (NullReferenceException) { return false; }
+                    return false;
+                });
+            }
+            if(cursor.TryGotoNext(MoveType.After, i => i.MatchLdcR4(-1) && i.Next.MatchCeq()))
+            {
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.EmitDelegate<Func<float, Player, float>>((f, p) =>
+                {
+                    try { if (DynamicData.For(p).TryGet<bool>(QUALITYOFLIFEUPDATE, out bool c) && c) return p.DashDir.Y; }
+                    catch (NullReferenceException) { return f; }
+                    return f;
+                });
+            }
+
+
+        }
+
     }
 }

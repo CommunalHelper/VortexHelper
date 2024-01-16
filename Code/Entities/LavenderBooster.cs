@@ -16,11 +16,12 @@ public class LavenderBooster : Booster
     public static readonly ParticleType P_BurstExplodeLavender = new(P_Burst);
 
     private readonly DynData<Booster> boosterData;
-
+    private readonly bool QoL;
     public LavenderBooster(EntityData data, Vector2 offset)
         : base(data.Position + offset, red: false)
     {
         this.boosterData = new DynData<Booster>(this);
+        QoL = data.Bool("QoL", false);
 
         Sprite oldSprite = this.boosterData.Get<Sprite>("sprite");
         Remove(oldSprite);
@@ -56,11 +57,13 @@ public class LavenderBooster : Booster
         private static void Booster_PlayerReleased(On.Celeste.Booster.orig_PlayerReleased orig, Booster self)
         {
             orig(self);
-            if (Util.TryGetPlayer(out Player player) && player.LastBooster is LavenderBooster)
+            if (Util.TryGetPlayer(out Player player) && player.LastBooster is LavenderBooster l)
             {
                 Audio.Play(SFX.game_05_redbooster_end, player.Center);
                 PurpleBooster.LaunchPlayerParticles(player, player.DashDir, P_BurstExplodeLavender);
-                PurpleBooster.PurpleBoosterExplodeLaunch(player, player.GetData(), self.Center - player.DashDir, null, -1f);
+                DynamicData dyn = DynamicData.For(player);
+                dyn.Set(PurpleBooster.QUALITYOFLIFEUPDATE, l.QoL);
+                PurpleBooster.PurpleBoosterExplodeLaunch(player, dyn, self.Center - player.DashDir, null, -1f);
             }
         }
 
