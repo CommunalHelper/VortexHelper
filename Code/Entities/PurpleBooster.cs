@@ -465,6 +465,10 @@ public class PurpleBooster : Entity
         Util.TryGetPlayer(out Player player);
         DynamicData playerData = DynamicData.For(player);
         Vector2 origin = playerData.Get<Vector2>("boostTarget");
+        if(playerData.GET(QUALITYOFLIFEUPDATE) is bool b && b) {
+            yield return null;
+            player.DashDir = lastAim;
+        }
 
         Vector2 earlyExitBoost = Vector2.Zero;
         while (t < 1f)
