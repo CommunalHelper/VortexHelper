@@ -14,9 +14,9 @@ public static class Util
 
     public static void LoadDelegates()
     {
-        player_WallJumpCheck = typeof(Player).GetMethod("WallJumpCheck", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetFastDelegate();
-        player_SuperWallJump = typeof(Player).GetMethod("SuperWallJump", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetFastDelegate();
+        player_WallJumpCheck = typeof(Player).GetMethod("WallJumpCheck", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        player_SuperWallJump = typeof(Player).GetMethod("SuperWallJump", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
     }
-    public static FastReflectionDelegate player_WallJumpCheck;
-    public static FastReflectionDelegate player_SuperWallJump;
+    public static MethodInfo player_WallJumpCheck;
+    public static MethodInfo player_SuperWallJump;
 }
