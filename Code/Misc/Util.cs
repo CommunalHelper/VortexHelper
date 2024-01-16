@@ -1,5 +1,6 @@
 ﻿using Monocle;
 using MonoMod.Utils;
+using System.Reflection;
 
 namespace Celeste.Mod.VortexHelper.Misc;
 
@@ -14,8 +15,8 @@ public static class Util
 
     public static void LoadDelegates()
     {
-        player_WallJumpCheck = typeof(Player).GetMethod("WallJumpCheck", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        player_SuperWallJump = typeof(Player).GetMethod("SuperWallJump", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        player_WallJumpCheck = typeof(Player).GetMethod("WallJumpCheck", BindingFlags.NonPublic | BindingFlags.Instance);
+        player_SuperWallJump = typeof(Player).GetMethod("SuperWallJump", BindingFlags.NonPublic | BindingFlags.Instance);
     }
     public static MethodInfo player_WallJumpCheck;
     public static MethodInfo player_SuperWallJump;
