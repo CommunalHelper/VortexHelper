@@ -10,6 +10,7 @@ using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using System;
 using System.Collections;
+using System.Reflection;
 
 namespace Celeste.Mod.VortexHelper.Entities;
 
@@ -17,6 +18,9 @@ namespace Celeste.Mod.VortexHelper.Entities;
 [Tracked]
 public class PurpleBooster : Entity
 {
+    // TEMPORARY - MonoMod has a bug rn that crashes if you use DynamicData setting on a Nullable`1
+    private static FieldInfo player_LaunchApproachX = typeof(Player).GetField("launchApproachX", BindingFlags.Instance | BindingFlags.NonPublic);
+
     internal const string POSSIBLE_EARLY_DASHSPEED = "purpleBoostPossibleEarlyDashSpeed";
     internal const string QUALITYOFLIFEUPDATE = "purpleBoostQoL";
 
@@ -343,7 +347,7 @@ public class PurpleBooster : Entity
             flag = null;
         else
         {
-            MapMetaModeProperties meta = level.Session.MapData.GetMeta();
+            MapMetaModeProperties meta = level.Session.MapData.Meta;
             flag = meta?.TheoInBubble;
         }
 
@@ -522,7 +526,8 @@ public class PurpleBooster : Entity
         bool QoL = playerData?.Get(QUALITYOFLIFEUPDATE) is bool b && b;
         Input.Rumble(RumbleStrength.Strong, RumbleLength.Medium);
         Celeste.Freeze(QoL ? 0.05f : 0.1f);
-        playerData.Set("launchApproachX", null);
+        player_LaunchApproachX.SetValue(player, null);
+        //playerData.Set("launchApproachX", new float?()); TEMPORARY - MonoMod has a bug rn that crashes if you use DynamicData setting on a Nullable`1
         Level level = player.SceneAs<Level>();
 
         if (origin is not null)

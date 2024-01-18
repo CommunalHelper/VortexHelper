@@ -284,7 +284,7 @@ public class FloorBooster : Entity
         {
             DynamicData playerData = DynamicData.For(self);
 
-            // thanks max480 for the bug report.
+            // thanks maddie480 for the bug report.
             if (!playerData.Data.ContainsKey("lastFloorBooster"))
                 playerData.Set("lastFloorBooster", null);
 
