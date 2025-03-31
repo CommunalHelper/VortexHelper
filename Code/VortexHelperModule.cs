@@ -67,10 +67,12 @@ public class VortexHelperModule : EverestModule
         BowlPuffer.Hooks.Hook();
         PufferBarrierRenderer.Hooks.Hook();
         StaticMoverWithLiftSpeed.Hooks.Hook();
+        ColorSwitch.Hooks.Hook();
+        ColorSwitchFlagsController.Hooks.Hook();
         MiscHooks.Hook();
 
         Util.LoadDelegates();
-        
+
         typeof(GravityHelperInterop.Imports).ModInterop();
     }
 
@@ -84,6 +86,8 @@ public class VortexHelperModule : EverestModule
         BowlPuffer.Hooks.Unhook();
         PufferBarrierRenderer.Hooks.Unhook();
         StaticMoverWithLiftSpeed.Hooks.Unhook();
+        ColorSwitch.Hooks.Unhook();
+        ColorSwitchFlagsController.Hooks.Unhook();
         MiscHooks.Unhook();
     }
 

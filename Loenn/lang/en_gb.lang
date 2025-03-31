@@ -35,6 +35,7 @@ entities.VortexHelper/ColorSwitch.attributes.description.rose=Enables switch to 
 entities.VortexHelper/ColorSwitch.attributes.description.orange=Enables switch to ORANGE through this Color Switch.
 entities.VortexHelper/ColorSwitch.attributes.description.lime=Enables switch to LIME through this Color Switch.
 entities.VortexHelper/ColorSwitch.attributes.description.random=Makes this Color Switch randomly pick one of its enabled colors.
+entities.VortexHelper/ColorSwitch.attributes.description.holdableActivated=Makes collisions with holdables (Jellyfish and Theo Crystals) activate this Color Switch.
 
 # Vortex Switch Gate
 entities.VortexHelper/VortexSwitchGate.placements.name.crush=Custom Switch Gate (Crush)

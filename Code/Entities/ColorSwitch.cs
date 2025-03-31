@@ -29,12 +29,14 @@ public class ColorSwitch : Solid
     private int nextColorIndex = 0;
     private readonly bool singleColor, random;
 
+    private readonly bool holdableActivated;
+
     public ColorSwitch(EntityData data, Vector2 offset)
         : this(data.Position + offset, data.Width, data.Height,
-              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"))
+              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"), data.Bool("holdableActivated"))
     { }
 
-    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random)
+    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random, bool holdableActivated)
         : base(position, width, height, true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.ZipMover;
@@ -78,6 +80,7 @@ public class ColorSwitch : Solid
         SetEdgeColor(this.EdgeColor, this.EdgeColor);
         SetBackgroundColor(col, col);
 
+        this.holdableActivated = holdableActivated;
         this.OnDashCollide = Dashed;
     }
 
@@ -266,5 +269,39 @@ public class ColorSwitch : Solid
 
         num += 2;
         SceneAs<Level>().Particles.Emit(smashParticle, num, position, positionRange, direction);
+    }
+
+    internal static class Hooks
+    {
+        public static void Hook()
+        {
+            On.Celeste.TheoCrystal.OnCollideH += TheoCrystal_OnCollideH;
+            On.Celeste.TheoCrystal.OnCollideV += TheoCrystal_OnCollideV;
+            On.Celeste.Glider.OnCollideH += Glider_OnCollideH;
+        }
+
+        public static void Unhook()
+        {
+            On.Celeste.TheoCrystal.OnCollideH -= TheoCrystal_OnCollideH;
+            On.Celeste.TheoCrystal.OnCollideV -= TheoCrystal_OnCollideV;
+            On.Celeste.Glider.OnCollideH -= Glider_OnCollideH;
+        }
+
+        private static void ActivateSwitch(Action callOrig, CollisionData data, Func<bool> speedChecker)
+        {
+            if (data.Hit is ColorSwitch colorSwitch
+                && colorSwitch.holdableActivated
+                && !colorSwitch.colors[colorSwitch.nextColorIndex].IsActive()
+                && speedChecker())
+            {
+                colorSwitch.Switch(data.Direction);
+            }
+
+            callOrig();
+        }
+
+        private static void TheoCrystal_OnCollideH(On.Celeste.TheoCrystal.orig_OnCollideH orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => Math.Abs(self.Speed.X) > 100f);
+        private static void TheoCrystal_OnCollideV(On.Celeste.TheoCrystal.orig_OnCollideV orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => self.Speed.Y > 160f);
+        private static void Glider_OnCollideH(On.Celeste.Glider.orig_OnCollideH orig, Glider self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => Math.Abs(self.Speed.X) > 60f);
     }
 }

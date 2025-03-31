@@ -17,7 +17,8 @@ colorSwitch.placements = {
             rose = true,
             orange = true,
             lime = true,
-            random = false
+            random = false,
+            holdableActivated = false
         }
     },
     {
@@ -29,7 +30,8 @@ colorSwitch.placements = {
             rose = true,
             orange = true,
             lime = true,
-            random = true
+            random = true,
+            holdableActivated = false
         }
     }
 }
