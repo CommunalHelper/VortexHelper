@@ -278,6 +278,7 @@ public class ColorSwitch : Solid
             On.Celeste.TheoCrystal.OnCollideH += TheoCrystal_OnCollideH;
             On.Celeste.TheoCrystal.OnCollideV += TheoCrystal_OnCollideV;
             On.Celeste.Glider.OnCollideH += Glider_OnCollideH;
+            On.Celeste.Glider.OnCollideV += Glider_OnCollideV;
         }
 
         public static void Unhook()
@@ -285,6 +286,7 @@ public class ColorSwitch : Solid
             On.Celeste.TheoCrystal.OnCollideH -= TheoCrystal_OnCollideH;
             On.Celeste.TheoCrystal.OnCollideV -= TheoCrystal_OnCollideV;
             On.Celeste.Glider.OnCollideH -= Glider_OnCollideH;
+            On.Celeste.Glider.OnCollideV -= Glider_OnCollideV;
         }
 
         private static void ActivateSwitch(Action callOrig, CollisionData data, Func<bool> speedChecker)
@@ -300,8 +302,9 @@ public class ColorSwitch : Solid
             callOrig();
         }
 
-        private static void TheoCrystal_OnCollideH(On.Celeste.TheoCrystal.orig_OnCollideH orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => Math.Abs(self.Speed.X) > 100f);
-        private static void TheoCrystal_OnCollideV(On.Celeste.TheoCrystal.orig_OnCollideV orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => self.Speed.Y > 160f);
-        private static void Glider_OnCollideH(On.Celeste.Glider.orig_OnCollideH orig, Glider self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => Math.Abs(self.Speed.X) > 60f);
+        private static void TheoCrystal_OnCollideH(On.Celeste.TheoCrystal.orig_OnCollideH orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => true);
+        private static void TheoCrystal_OnCollideV(On.Celeste.TheoCrystal.orig_OnCollideV orig, TheoCrystal self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => self.Speed.Y > 160f || self.Speed.Y < 0f);
+        private static void Glider_OnCollideH(On.Celeste.Glider.orig_OnCollideH orig, Glider self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => true);
+        private static void Glider_OnCollideV(On.Celeste.Glider.orig_OnCollideV orig, Glider self, CollisionData data) => ActivateSwitch(() => orig(self, data), data, () => self.Speed.Y < 0f);
     }
 }
