@@ -7,6 +7,12 @@ colorSwitch.name = "VortexHelper/ColorSwitch"
 colorSwitch.resizable = {true, true}
 colorSwitch.minimumSize = {16, 16}
 
+colorSwitch.fieldOrder = {
+    "x", "y", "width", "height",
+    "blue", "rose", "orange", "lime", "random",
+    "holdableActivated"
+}
+
 colorSwitch.placements = {
     {
         name = "all_cycle",

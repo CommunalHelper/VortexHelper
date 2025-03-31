@@ -22,13 +22,15 @@ public class ColorSwitchFlagsController : Entity
     public override void Update()
     {
         Session session = SceneAs<Level>().Session;
+        VortexHelperSession.SwitchBlockColor current = VortexHelperModule.SessionProperties.SessionSwitchBlockColor;
 
-        foreach (string flag in colorsToFlagNames.Values)
+        foreach (var color in colorsToFlagNames)
         {
-            session.SetFlag(flag, false);
+            if (current != color.Key && session.GetFlag(color.Value))
+                session.SetFlag(color.Value, false);
+            else if (current == color.Key && !session.GetFlag(color.Value))
+                session.SetFlag(color.Value, true);
         }
-
-        session.SetFlag(colorsToFlagNames[VortexHelperModule.SessionProperties.SessionSwitchBlockColor]);
     }
 
     internal static class Hooks
