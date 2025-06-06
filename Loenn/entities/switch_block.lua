@@ -35,12 +35,11 @@ for i, _ in ipairs(colors) do
         data = {
             width = 16,
             height = 16,
-            index = i - 1
+            index = i - 1,
+            spriteDir = ""
         }
     }
 end
-
-local frame = "objects/VortexHelper/onoff/solid"
 
 local function getSearchPredicate(entity)
     return function(target)
@@ -94,6 +93,7 @@ local function getTileSprite(entity, x, y, color, rectangles)
     end
 
     if quadX and quadY then
+        local frame = (entity.spriteDir or "") ~= "" and (entity.spriteDir .. "/solid") or "objects/VortexHelper/onoff/solid"
         local sprite = drawableSprite.fromTexture(frame, entity)
 
         sprite:addPosition(drawX, drawY)

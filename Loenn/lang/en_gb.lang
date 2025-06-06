@@ -35,6 +35,7 @@ entities.VortexHelper/ColorSwitch.attributes.description.rose=Enables switch to 
 entities.VortexHelper/ColorSwitch.attributes.description.orange=Enables switch to ORANGE through this Color Switch.
 entities.VortexHelper/ColorSwitch.attributes.description.lime=Enables switch to LIME through this Color Switch.
 entities.VortexHelper/ColorSwitch.attributes.description.random=Makes this Color Switch randomly pick one of its enabled colors.
+entities.VortexHelper/ColorSwitch.attributes.description.spriteDir=Directory relative to Graphics/Atlases/Gameplay to use for custom sprites.\nMust contain an image named "switch" that will be used for the sprites of this block.
 
 # Vortex Switch Gate
 entities.VortexHelper/VortexSwitchGate.placements.name.crush=Custom Switch Gate (Crush)
@@ -85,6 +86,16 @@ entities.VortexHelper/SwitchBlock.placements.name.switch_block_1=Switch Block (1
 entities.VortexHelper/SwitchBlock.placements.name.switch_block_2=Switch Block (2 - Orange)
 entities.VortexHelper/SwitchBlock.placements.name.switch_block_3=Switch Block (3 - Lime)
 entities.VortexHelper/SwitchBlock.attributes.description.index=Changes the index and color of this Switch Block.
+entities.VortexHelper/ColorSwitch.attributes.description.spriteDir=Directory relative to Graphics/Atlases/Gameplay to use for custom sprites.\nMust contain images named "solid", "outline_blue", "outline_red", "outline_orange" and "outline_green" that will be used for the sprites of this block.\n"solid" is used for the activated state of this block, and "outline_blue", "outline_red", "outline_orange" and "outline_green" are used for the deactivated state of this block depending on its index.
+
+# Switch Block Color Controller
+entities.VortexHelper/SwitchBlockColorController.placements.name.default=Switch Block Color Controller
+entities.VortexHelper/SwitchBlockColorController.attributes.description.blueColor=The color to use for all Switch Blocks of the Blue index in this room.
+entities.VortexHelper/SwitchBlockColorController.attributes.description.roseColor=The color to use for all Switch Blocks of the Rose index in this room.
+entities.VortexHelper/SwitchBlockColorController.attributes.description.orangeColor=The color to use for all Switch Blocks of the Orange index in this room.
+entities.VortexHelper/SwitchBlockColorController.attributes.description.limeColor=The color to use for all Switch Blocks of the Lime index in this room.
+entities.VortexHelper/SwitchBlockColorController.attributes.description.switchBackgroundColor=The color to use for the default background of all Color Switches in this room.
+entities.VortexHelper/SwitchBlockColorController.attributes.description.switchEdgeColor=The color to use for the edges of all Color Switches in this room.
 
 # Vortex Custom Bumper
 entities.VortexHelper/VortexCustomBumper.placements.name.green=Bumper (Green)

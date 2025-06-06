@@ -2,6 +2,7 @@
 using Celeste.Mod.VortexHelper.Misc.Extensions;
 using Microsoft.Xna.Framework;
 using Monocle;
+using System;
 using System.Collections.Generic;
 
 namespace Celeste.Mod.VortexHelper.Entities;
@@ -33,7 +34,8 @@ public class SwitchBlock : Solid
     private bool Activated;
     private readonly VortexHelperSession.SwitchBlockColor switchBlockColor;
     private readonly int index;
-    private readonly Color color;
+    private readonly string spriteDir;
+    private Color color;
 
     private readonly LightOcclude occluder;
     private Wiggler wiggler;
@@ -50,13 +52,14 @@ public class SwitchBlock : Solid
     private readonly int blockHeight = 2;
 
     public SwitchBlock(EntityData data, Vector2 offset)
-        : this(data.Position + offset, data.Width, data.Height, data.Int("index", 0)) { }
+        : this(data.Position + offset, data.Width, data.Height, data.Int("index", 0), data.Attr("spriteDir", "").Trim().TrimEnd('/')) { }
 
-    public SwitchBlock(Vector2 position, int width, int height, int index)
+    public SwitchBlock(Vector2 position, int width, int height, int index, string spriteDir)
         : base(position, width, height, true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
         this.index = index;
+        this.spriteDir = string.IsNullOrEmpty(spriteDir) ? "objects/VortexHelper/onoff" : spriteDir;
 
         this.switchBlockColor = this.index switch
         {
@@ -66,15 +69,16 @@ public class SwitchBlock : Solid
             _ => VortexHelperSession.SwitchBlockColor.Blue,
         };
 
-        this.color = this.switchBlockColor.GetColor();
-        this.Activated = this.Collidable = this.switchBlockColor.IsActive();
-
         Add(this.occluder = new LightOcclude());
     }
 
     public override void Awake(Scene scene)
     {
         base.Awake(scene);
+        
+        this.color = this.switchBlockColor.GetColor(SceneAs<Level>());
+        this.Activated = this.Collidable = this.switchBlockColor.IsActive();
+        
         Color color = Calc.HexToColor("667da5");
         var disabledColor = new Color(color.R / 255f * (this.color.R / 255f), color.G / 255f * (this.color.G / 255f), color.B / 255f * (this.color.B / 255f), 1f);
 
@@ -151,10 +155,11 @@ public class SwitchBlock : Solid
 
         string idx = this.index switch
         {
+            0 => "blue",
             1 => "red",
             2 => "orange",
             3 => "green",
-            _ => "blue",
+            _ => throw new ArgumentOutOfRangeException()
         };
 
         // cassette block autotiling
@@ -231,8 +236,8 @@ public class SwitchBlock : Solid
 
     private void SetImage(float x, float y, int tx, int ty, string idx)
     {
-        this.pressed.Add(CreateImage(x, y, tx, ty, GFX.Game["objects/VortexHelper/onoff/outline_" + idx]));
-        this.solid.Add(CreateImage(x, y, tx, ty, GFX.Game["objects/VortexHelper/onoff/solid"]));
+        this.pressed.Add(CreateImage(x, y, tx, ty, GFX.Game[this.spriteDir + "/outline_" + idx]));
+        this.solid.Add(CreateImage(x, y, tx, ty, GFX.Game[this.spriteDir + "/solid"]));
     }
 
     private Image CreateImage(float x, float y, int tx, int ty, MTexture tex)

@@ -15,11 +15,13 @@ public class ColorSwitch : Solid
 
     private readonly MTexture[,] edges = new MTexture[3, 3];
 
-    private static readonly Color defaultBackgroundColor = Calc.HexToColor("191919");
-    private static readonly Color defaultEdgeColor = Calc.HexToColor("646464");
+    public static readonly Color DefaultBackgroundColor = Calc.HexToColor("191919");
+    public static readonly Color DefaultEdgeColor = Calc.HexToColor("646464");
+    private static Color RoomDefaultBackgroundColor(Level level) => level.Tracker.GetEntity<SwitchBlockColorController>()?.SwitchBackgroundColor ?? DefaultBackgroundColor;
+    private static Color RoomDefaultEdgeColor(Level level) => level.Tracker.GetEntity<SwitchBlockColorController>()?.SwitchEdgeColor ?? DefaultEdgeColor;
 
-    private Color BackgroundColor = defaultBackgroundColor;
-    private Color EdgeColor = defaultEdgeColor;
+    private Color BackgroundColor;
+    private Color EdgeColor;
     private Color currentEdgeColor, currentBackgroundColor;
 
     private Vector2 scale = Vector2.One;
@@ -31,10 +33,10 @@ public class ColorSwitch : Solid
 
     public ColorSwitch(EntityData data, Vector2 offset)
         : this(data.Position + offset, data.Width, data.Height,
-              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"))
+              data.Bool("blue"), data.Bool("rose"), data.Bool("orange"), data.Bool("lime"), data.Bool("random"), data.Attr("spriteDir", "").Trim().TrimEnd('/'))
     { }
 
-    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random)
+    public ColorSwitch(Vector2 position, int width, int height, bool blue, bool rose, bool orange, bool lime, bool random, string spriteDir)
         : base(position, width, height, true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.ZipMover;
@@ -43,7 +45,7 @@ public class ColorSwitch : Solid
         if (!blue && !rose && !orange && !lime)
             blue = rose = orange = lime = true;
 
-        string block = "objects/VortexHelper/onoff/switch";
+        string block = string.IsNullOrEmpty(spriteDir) ? "objects/VortexHelper/onoff/switch" : spriteDir + "/switch";
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
                 this.edges[i, j] = GFX.Game[block].GetSubtexture(i * 8, j * 8, 8, 8);
@@ -61,8 +63,6 @@ public class ColorSwitch : Solid
             if (colorBools[i])
                 this.colors[arrIdx++] = (VortexHelperSession.SwitchBlockColor) i;
 
-        NextColor(this.colors[this.nextColorIndex], true);
-
         Add(new LightOcclude());
         Add(new SoundSource(SFX.game_01_console_static_loop)
         {
@@ -74,11 +74,21 @@ public class ColorSwitch : Solid
         if (height > 32)
             this.scaleStrength.Y = height / 32f;
 
-        Color col = this.colors[this.nextColorIndex].IsActive() ? defaultBackgroundColor : this.colors[this.nextColorIndex].GetColor();
-        SetEdgeColor(this.EdgeColor, this.EdgeColor);
-        SetBackgroundColor(col, col);
-
         this.OnDashCollide = Dashed;
+    }
+
+    public override void Awake(Scene scene)
+    {
+        base.Awake(scene);
+        
+        Level level = SceneAs<Level>();
+        
+        Color bgCol = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
+        Color edgeCol = RoomDefaultEdgeColor(level);
+        SetBackgroundColor(bgCol, bgCol);
+        SetEdgeColor(edgeCol, edgeCol);
+        
+        NextColor(this.colors[this.nextColorIndex], true);
     }
 
     public override void Render()
@@ -92,9 +102,10 @@ public class ColorSwitch : Solid
         int rectH = (int) ((this.Height - 2) * this.scale.Y);
         var rect = new Rectangle(x, y, rectW, rectH);
 
+        Color defaultCol = RoomDefaultBackgroundColor(SceneAs<Level>());
         Color col = this.random
-            ? Color.Lerp(defaultBackgroundColor, Color.White, (float) (0.05f * Math.Sin(this.Scene.TimeActive * 5f)) + 0.05f)
-            : this.BackgroundColor != defaultBackgroundColor
+            ? Color.Lerp(defaultCol, Color.White, (float) (0.05f * Math.Sin(this.Scene.TimeActive * 5f)) + 0.05f)
+            : this.BackgroundColor != defaultCol
                 ? Color.Lerp(this.currentBackgroundColor, Color.Black, 0.2f)
                 : this.currentBackgroundColor;
 
@@ -176,6 +187,8 @@ public class ColorSwitch : Solid
 
     public void Switch(Vector2 direction)
     {
+        Level level = SceneAs<Level>();
+        
         this.scale = new Vector2(
             1f + (Math.Abs(direction.Y) * 0.5f - Math.Abs(direction.X) * 0.5f) / this.scaleStrength.X,
             1f + (Math.Abs(direction.X) * 0.5f - Math.Abs(direction.Y) * 0.5f) / this.scaleStrength.Y
@@ -185,10 +198,10 @@ public class ColorSwitch : Solid
             this.nextColorIndex = Calc.Random.Next(0, this.colors.Length);
 
         VortexHelperModule.SessionProperties.SessionSwitchBlockColor = this.colors[this.nextColorIndex];
-        Color col = VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetColor();
+        Color col = VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetColor(level);
 
         UpdateColorSwitches(this.Scene, this.colors[this.nextColorIndex]);
-        SetEdgeColor(defaultEdgeColor, col);
+        SetEdgeColor(RoomDefaultEdgeColor(level), col);
         this.currentBackgroundColor = Color.White;
 
         Audio.Play(CustomSFX.game_colorSwitch_hit, this.Center);
@@ -196,7 +209,7 @@ public class ColorSwitch : Solid
             Audio.Play(CustomSFX.game_switchBlock_switch, "tone", VortexHelperModule.SessionProperties.SessionSwitchBlockColor.GetSoundParam());
 
         Input.Rumble(RumbleStrength.Strong, RumbleLength.Long);
-        SceneAs<Level>().DirectionalShake(direction, 0.25f);
+        level.DirectionalShake(direction, 0.25f);
         StartShaking(0.25f);
 
         ParticleType p = LightningBreakerBox.P_Smash;
@@ -213,6 +226,8 @@ public class ColorSwitch : Solid
 
     private void NextColor(VortexHelperSession.SwitchBlockColor colorNext, bool start)
     {
+        Level level = SceneAs<Level>();
+        
         if (colorNext == this.colors[this.nextColorIndex] && !this.singleColor)
         {
             if (!start)
@@ -224,8 +239,8 @@ public class ColorSwitch : Solid
             if (this.colors[this.nextColorIndex].IsActive())
                 this.nextColorIndex++;
         }
-
-        this.BackgroundColor = this.colors[this.nextColorIndex].IsActive() ? defaultBackgroundColor : this.colors[this.nextColorIndex].GetColor();
+        
+        this.BackgroundColor = this.colors[this.nextColorIndex].IsActive() ? RoomDefaultBackgroundColor(level) : this.colors[this.nextColorIndex].GetColor(level);
     }
 
     private void SmashParticles(Vector2 dir, ParticleType smashParticle)

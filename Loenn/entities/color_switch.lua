@@ -17,7 +17,8 @@ colorSwitch.placements = {
             rose = true,
             orange = true,
             lime = true,
-            random = false
+            random = false,
+            spriteDir = ""
         }
     },
     {
@@ -29,12 +30,12 @@ colorSwitch.placements = {
             rose = true,
             orange = true,
             lime = true,
-            random = true
+            random = true,
+            spriteDir = ""
         }
     }
 }
 
-local frame = "objects/VortexHelper/onoff/switch"
 local nine_patch_options = {
     mode = "border",
     borderMode = "repeat",
@@ -45,6 +46,7 @@ local bgColor = {40 / 255, 40 / 255, 40 / 255, 1.0}
 function colorSwitch.sprite(room, entity)
     local x, y = entity.x or 0, entity.y or 0
     local width, height = entity.width or 16, entity.height or 16
+    local frame = (entity.spriteDir or "") ~= "" and (entity.spriteDir .. "/switch") or "objects/VortexHelper/onoff/switch"
 
     return {
         drawableRectangle.fromRectangle("fill", x + 1, y + 1, width - 2, height - 2, bgColor):getDrawableSprite(),
