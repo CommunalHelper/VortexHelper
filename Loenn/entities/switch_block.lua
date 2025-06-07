@@ -1,20 +1,7 @@
-local utils = require "utils"
-local drawableSprite = require "structs.drawable_sprite"
-local connectedEntities = require "helpers.connected_entities"
-
-local colors = {
-    {50 / 255, 50 / 255, 255 / 255, 255 / 255},
-    {255 / 255, 50 / 255, 101 / 255, 255 / 255},
-    {255 / 255, 149 / 255, 50 / 255, 255 / 255},
-    {156 / 255, 255 / 255, 50 / 255, 255 / 255}
-}
-
-local colorNames = {
-    ["Blue"] = 0,
-    ["Rose"] = 1,
-    ["Orange"] = 2,
-    ["Lime"] = 3
-}
+local utils = require("utils")
+local drawableSprite = require("structs.drawable_sprite")
+local connectedEntities = require("helpers.connected_entities")
+local vortexHelper = require("mods").requireFromPlugin("libraries.vortex_helper")
 
 local switchBlock = {}
 
@@ -23,19 +10,19 @@ switchBlock.minimumSize = {16, 16}
 switchBlock.fieldInformation = {
     index = {
         fieldType = "integer",
-        options = colorNames,
+        options = vortexHelper.switchBlockColorNames,
         editable = false
     }
 }
 
 switchBlock.placements = {}
-for i, _ in ipairs(colors) do
-    switchBlock.placements[i] = {
-        name = string.format("switch_block_%s", i - 1),
+for _, i in pairs(vortexHelper.switchBlockColorNames) do
+    switchBlock.placements[i + 1] = {
+        name = string.format("switch_block_%s", i),
         data = {
             width = 16,
             height = 16,
-            index = i - 1,
+            index = i,
             spriteDir = ""
         }
     }
@@ -108,9 +95,7 @@ end
 
 function switchBlock.sprite(room, entity)
     local relevantBlocks = utils.filter(getSearchPredicate(entity), room.entities)
-
     connectedEntities.appendIfMissing(relevantBlocks, entity)
-
     local rectangles = connectedEntities.getEntityRectangles(relevantBlocks)
 
     local sprites = {}
@@ -119,7 +104,8 @@ function switchBlock.sprite(room, entity)
     local tileWidth, tileHeight = math.ceil(width / 8), math.ceil(height / 8)
 
     local index = entity.index or 0
-    local color = colors[index + 1] or colors[1]
+    local colors = vortexHelper.switchBlockRoomColors(room)
+    local color = colors[index] or colors[0]
 
     for x = 1, tileWidth do
         for y = 1, tileHeight do
