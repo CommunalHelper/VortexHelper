@@ -45,8 +45,8 @@ function vortexHelper.colorSwitchRoomColors(room)
     if controller == nil then return vortexHelper.colorSwitchDefaultColors end
     
     return {
-        bgColor = utils.getColor(controller.switchBackgroundColor or vortexHelper.colorSwitchDefaultColors.bg),
-        edgeColor = utils.getColor(controller.switchEdgeColor or vortexHelper.colorSwitchDefaultColors.edge)
+        bgColor = utils.getColor(controller.switchBackgroundColor or vortexHelper.colorSwitchDefaultColors.bgColor),
+        edgeColor = utils.getColor(controller.switchEdgeColor or vortexHelper.colorSwitchDefaultColors.edgeColor)
     }
 end
 
