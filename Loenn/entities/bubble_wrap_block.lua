@@ -19,12 +19,13 @@ bubbleWrapBlock.placements = {
             width = 16,
             height = 16,
             canDash = true,
-            respawnTime = 3.0
+            respawnTime = 3.0,
+            texture = "objects/VortexHelper/bubbleWrapBlock",
+            delayRespawn = false,
         }
     }
 }
 
-local frame = "objects/VortexHelper/bubbleWrapBlock/bubbleBlock"
 local nine_patch_options = {
     mode = "fill",
     borderMode = "repeat",
@@ -35,7 +36,7 @@ function bubbleWrapBlock.sprite(room, entity)
     local x, y = entity.x or 0, entity.y or 0
     local width, height = entity.width or 16, entity.height or 16
 
-    local ninePatch = drawableNinePatch.fromTexture(frame, nine_patch_options, x, y, width, height)
+    local ninePatch = drawableNinePatch.fromTexture((entity.texture or "objects/VortexHelper/bubbleWrapBlock").."/bubbleBlock", nine_patch_options, x, y, width, height)
 
     return ninePatch:getDrawableSprite()
 end

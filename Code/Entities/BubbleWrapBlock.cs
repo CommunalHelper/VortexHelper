@@ -22,29 +22,36 @@ public class BubbleWrapBlock : Solid
 
     private readonly bool canDash;
     private readonly float respawnTime;
+    private readonly bool delayRespawn;
     private float timer;
     private float rectEffectInflate = 0f;
 
     private readonly SoundSource breakSfx;
 
     private readonly MTexture[,,] nineSlice;
+    private readonly MTexture debrisTexture;
 
     private Vector2 wobbleScale = Vector2.One;
     private readonly Wiggler wobble;
 
     public BubbleWrapBlock(EntityData data, Vector2 offset)
-        : this(data.Position + offset, data.Width, data.Height, data.Bool("canDash"), data.Float("respawnTime")) { }
+        : this(data.Position + offset, data.Width, data.Height, data.Bool("canDash"), data.Float("respawnTime"), data.Attr("texture", "objects/VortexHelper/bubbleWrapBlock"), data.Bool("delayRespawn", false)) { }
 
     public BubbleWrapBlock(Vector2 position, int width, int height, bool canDash, float respawnTime)
+        : this(position, width, height, canDash, respawnTime, "objects/VortexHelper/bubbleWrapBlock", false) { }
+
+    public BubbleWrapBlock(Vector2 position, int width, int height, bool canDash, float respawnTime, string texture, bool delayed)
         : base(position, width, height, safe: true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.Brick;
 
         this.canDash = canDash;
         this.respawnTime = respawnTime;
+        this.delayRespawn = delayed;
 
-        MTexture block = GFX.Game["objects/VortexHelper/bubbleWrapBlock/bubbleBlock"];
-        MTexture outline = GFX.Game["objects/VortexHelper/bubbleWrapBlock/bubbleOutline"];
+        MTexture block = GFX.Game[texture + "/bubbleBlock"];
+        MTexture outline = GFX.Game[texture + "/bubbleOutline"];
+        this.debrisTexture = GFX.Game.GetOrDefault(texture + "/debris", GFX.Game["debris/VortexHelper/bubbleWrapBlock"]);
 
         this.nineSlice = new MTexture[3, 3, 2];
         for (int i = 0; i < 3; i++)
@@ -142,7 +149,7 @@ public class BubbleWrapBlock : Solid
             {
                 Debris debris = new Debris().orig_Init(this.Position + new Vector2(4 + i * 8, 4 + j * 8), '1').BlastFrom(this.Center);
                 var debrisData = new DynData<Debris>(debris);
-                debrisData.Get<Image>("image").Texture = GFX.Game["debris/VortexHelper/BubbleWrapBlock"];
+                debrisData.Get<Image>("image").Texture = this.debrisTexture;
                 this.Scene.Add(debris);
             }
         }
@@ -164,24 +171,45 @@ public class BubbleWrapBlock : Solid
 
         if (this.timer <= 0f)
             if (CheckEntitySafe())
-                Respawn();
+                StartRespawn();
 
         if (this.state == States.Gone)
             this.rectEffectInflate = Calc.Approach(this.rectEffectInflate, 3, 20 * Engine.DeltaTime);
     }
 
-    private void Respawn()
+    private void StartRespawn()
     {
         if (this.Collidable)
             return;
 
+        this.Collidable = true;
+
+        if (this.delayRespawn)
+        {
+            Audio.Play("event:/game/09_core/bounceblock_reappear", this.Center);
+            float duration = 0.35f;
+            for (int i = 0; i < this.Width / 8f; i++)
+            {
+                for (int j = 0; j < this.Height / 8f; j++)
+                {
+                    Vector2 pos = this.Position + new Vector2(4 + i * 8, 4 + j * 8);
+                    Scene.Add(Engine.Pooler.Create<BubbleWrapBlock.RespawnDebris>().Init(pos + (pos - Center).SafeNormalize() * 12f, pos, this.debrisTexture, duration));
+                }
+            }
+            Alarm.Set(this, duration, Respawn, Alarm.AlarmMode.Oneshot);
+        }
+        else
+            Respawn();
+    }
+
+    private void Respawn()
+    {
         this.wobble.Start();
         RespawnParticles();
         this.rectEffectInflate = 0f;
 
         EnableStaticMovers();
         this.breakSfx.Play(SFX.game_05_redbooster_reappear);
-        this.Collidable = true;
         this.state = States.Idle;
     }
 
@@ -208,4 +236,47 @@ public class BubbleWrapBlock : Solid
         LifeMax = 0.8f,
         DirectionRange = (float) Math.PI / 6f
     };
+
+    private class RespawnDebris : Entity
+    {
+        private float duration;
+        private Vector2 from;
+        private Vector2 to;
+
+        private Image sprite;
+        private float percent;
+
+        public BubbleWrapBlock.RespawnDebris Init(Vector2 from, Vector2 to, MTexture texture, float duration)
+        {
+            if (this.sprite == null)
+            {
+                Add(this.sprite = new Image(texture));
+                this.sprite.CenterOrigin();
+            }
+            else
+            {
+                this.sprite.Texture = texture;
+            }
+            this.sprite.Rotation = Calc.Random.NextAngle();
+
+            this.from = from;
+            this.Position = from;
+            this.percent = 0f;
+            this.to = to;
+            this.duration = duration;
+            return this;
+        }
+
+        public override void Update()
+        {
+            if (this.percent > 1f)
+            {
+                RemoveSelf();
+                return;
+            }
+            this.percent += Engine.DeltaTime / this.duration;
+            this.Position = Vector2.Lerp(this.from, this.to, Ease.CubeIn(this.percent));
+            this.sprite.Color = Color.White * this.percent;
+        }
+    }
 }
