@@ -25,7 +25,9 @@ entities.VortexHelper/BowlPuffer.attributes.description.explodeTimer=The time, i
 # Bubble Wrap Block
 entities.VortexHelper/BubbleWrapBlock.placements.name.bubble_wrap_block=Respawning Dash Block
 entities.VortexHelper/BubbleWrapBlock.attributes.description.canDash=Whether the player is able to break this block by dashing into it.
-entities.VortexHelper/BubbleWrapBlock.attributes.description.respawnTime=The time in seconds that this block takes to respawn after breaking. 
+entities.VortexHelper/BubbleWrapBlock.attributes.description.respawnTime=The time in seconds that this block takes to respawn after breaking.
+entities.VortexHelper/BubbleWrapBlock.attributes.description.texture=The folder containing the block textures.\nMust contain two 24x24 textures, named "bubbleBlock" and "bubbleOutline", and optionally a "debris" texture.
+entities.VortexHelper/BubbleWrapBlock.attributes.description.delayRespawn=Whether the attached objects should respawn slightly later than the block's collision, similar to Core Blocks.
 
 # Color Switch
 entities.VortexHelper/ColorSwitch.placements.name.all_cycle=Color Switch (All, Cycle)
