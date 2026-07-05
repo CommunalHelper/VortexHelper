@@ -43,15 +43,33 @@ public class Lilly : Solid
             this.SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
         }
 
-        public void UpdateArm(float move)
+        public void UpdateArm(float move, bool armsGiveLiftSpeed)
         {
             MoveH(move);
+            if (this.Collidable && armsGiveLiftSpeed)
+            {
+                foreach (Actor entity in Scene.Tracker.GetEntities<Actor>())
+                {
+                    if (entity.IsRiding(this))
+                    {
+                        if (entity.TreatNaive)
+                        {
+                            entity.LiftSpeed = LiftSpeed;
+                        }
+                        else
+                        {
+                            entity.LiftSpeed = LiftSpeed;
+                        }
+                    }
+                }
+            }
+
             this.X = this.From;
             this.Collider = Math.Abs(this.end.Distance) > 0 ? new Hitbox(this.To - this.From, 5) : null;
         }
     }
-
-    public const float ArmSpeed = 240;
+    
+    public float ArmSpeed;
     public const float ArmSpeedRetract = 112;
 
     private readonly Color idleColor = Calc.HexToColor("0061ff");
@@ -92,8 +110,8 @@ public class Lilly : Solid
      * k     ---> frame of the texture, between 0 and 1.
      * l     ---> state of the texture (0 = 'block', 1 = 'active_block').
      */
-    private static readonly MTexture[,,,] blockTextures = new MTexture[3, 4, 2, 2];
-    private static readonly MTexture[] armEndTextures = new MTexture[4];
+    private readonly MTexture[,,,] blockTextures = new MTexture[3, 4, 2, 2];
+    private readonly MTexture[] armEndTextures = new MTexture[4];
 
     private readonly int maxLength;
 
@@ -101,6 +119,10 @@ public class Lilly : Solid
 
     private bool Activated => this.faceState is FaceState.Dash or FaceState.Retract;
     private bool WasUsedOnce => this.faceState is FaceState.IdleAlt or FaceState.ClimbedOnAlt;
+    
+    private readonly bool overClocked;
+    
+    public readonly bool armsGiveLiftSpeed;
 
     private readonly BloomPoint bloom;
 
@@ -108,17 +130,17 @@ public class Lilly : Solid
     private readonly List<StaticMover> rightStaticMovers = new();
 
     public Lilly(EntityData data, Vector2 offset)
-        : this(data.Position + offset, data.Height, data.Int("maxLength"), data.Attr("spriteDir", "").Trim().TrimEnd('/'),
+        : this(data.Position + offset, data.Height, data.Int("maxLength"), data.Attr("spriteDir", "").Trim().TrimEnd('/'), data.Bool("overclocked"), data.Bool("armsGiveLiftSpeed"), 
             data.HexColor("idleColor", Calc.HexToColor("0061ff")), data.HexColor("climbedOnColor", Calc.HexToColor("ff38f1")), data.HexColor("dashColor", Calc.HexToColor("ff0033")), data.HexColor("retractColor", Calc.HexToColor("4800ff")),
             data.HexColor("idleAltColor", Calc.HexToColor("00d0ff")), data.HexColor("climbedOnAltColor", Calc.HexToColor("f432ff")), data.HexColor("horrifiedColor", Calc.HexToColor("bc51ff")))
     { }
 
-    public Lilly(Vector2 position, int height, int maxLength, string spriteDir,
+    public Lilly(Vector2 position, int height, int maxLength, string spriteDir, bool overClocked, bool armsGiveLiftSpeed,
         Color idleColor, Color climbedOnColor, Color dashColor, Color retractColor, Color idleAltColor, Color climbedOnAltColor, Color horrifiedColor)
         : base(position, 24, height, true)
     {
         this.SurfaceSoundIndex = SurfaceIndex.CassetteBlock;
-        this.arm = GFX.Game.GetAtlasSubtextures(string.IsNullOrEmpty(spriteDir) ? "objects/VortexHelper/squareBumperNew/arm" : spriteDir + "/arm");
+        this.arm = GFX.Game.GetAtlasSubtextures(string.IsNullOrEmpty(spriteDir) ? (overClocked ? "objects/VortexHelper/squareBumperNew/OCarm" : "objects/VortexHelper/squareBumperNew/arm") : spriteDir + "/arm");
 
         this.maxLength = Math.Abs(maxLength);
 
@@ -129,6 +151,8 @@ public class Lilly : Solid
             Position = middle
         });
 
+        this.armsGiveLiftSpeed = armsGiveLiftSpeed;
+        this.overClocked = overClocked;
         this.idleColor = idleColor;
         this.climbedOnColor = climbedOnColor;
         this.dashColor = dashColor;
@@ -143,15 +167,21 @@ public class Lilly : Solid
         this.face.Color = this.idleColor;
         Add(this.face);
 
-        if (!string.IsNullOrEmpty(spriteDir)) InitializeTextures(spriteDir);
+        if (!string.IsNullOrEmpty(spriteDir)) 
+            InitializeTextures(spriteDir);
+        else 
+            InitializeTextures("objects/VortexHelper/squareBumperNew");
 
         this.OnDashCollide = OnDashed;
+
+        this.ArmSpeed = overClocked ? 360f : 240f;
 
         Add(this.bloom = new BloomPoint(.65f, 16f)
         {
             Position = middle,
-            Visible = false
+            Visible = false,
         });
+
     }
 
     private static Sprite BuildCustomFaceSprite(string path)
@@ -203,10 +233,12 @@ public class Lilly : Solid
         // Dashed in, shaking.
         this.faceState = FaceState.Dash;
         this.face.Play("dashed", true);
+        if (this.overClocked)
+            this.face.Rate = 2;
         ChangeColor(dashColor);
-        StartShaking(0.375f);
-        Audio.Play(CustomSFX.game_lilly_dashed, this.Center);
-        yield return 0.5f;
+        StartShaking(this.overClocked ? 0.1875f : 0.375f);
+        Audio.Play(this.overClocked ? CustomSFX.game_lilly_OCdashed : CustomSFX.game_lilly_dashed, this.Center);
+        yield return this.overClocked ? 0.25f : 0.5f;
 
         // Arms extend.
         this.rightLength = this.leftLength = 0f;
@@ -239,7 +271,7 @@ public class Lilly : Solid
                 });
 
                 moveAmount = rightArmEnd.X - moveAmount;
-                rightArm.UpdateArm(moveAmount);
+                rightArm.UpdateArm(moveAmount, this.armsGiveLiftSpeed);
 
                 if (rightArmExtended)
                 {
@@ -261,7 +293,7 @@ public class Lilly : Solid
                 });
 
                 moveAmount = leftArmEnd.X - moveAmount;
-                leftArm.UpdateArm(moveAmount);
+                leftArm.UpdateArm(moveAmount, this.armsGiveLiftSpeed);
 
                 if (leftArmExtended)
                 {
@@ -309,7 +341,7 @@ public class Lilly : Solid
 
                 float move = newX - rightArmEnd.X;
                 rightArmEnd.MoveH(move);
-                rightArm.UpdateArm(move);
+                rightArm.UpdateArm(move, this.armsGiveLiftSpeed);
                 rightArmExtended = !finished;
             }
 
@@ -328,7 +360,7 @@ public class Lilly : Solid
 
                 float move = newX - leftArmEnd.X;
                 leftArmEnd.MoveH(move);
-                leftArm.UpdateArm(move);
+                leftArm.UpdateArm(move, this.armsGiveLiftSpeed);
                 leftArmExtended = !finished;
             }
 
@@ -514,12 +546,12 @@ public class Lilly : Solid
         this.Position = pos;
     }
 
-    public static void InitializeTextures(string path = "objects/VortexHelper/squareBumperNew")
+    public void InitializeTextures (string path)
     {
-        MTexture block00 = GFX.Game[path + "/block00"];
-        MTexture block01 = GFX.Game[path + "/block01"];
-        MTexture active_block00 = GFX.Game[path + "/active_block00"];
-        MTexture active_block01 = GFX.Game[path + "/active_block01"];
+        MTexture block00 = GFX.Game[path + (this.overClocked ? "/OCblock00" : "/block00")];
+        MTexture block01 = GFX.Game[path + (this.overClocked ? "/OCblock01" : "/block01")];
+        MTexture active_block00 = GFX.Game[path + (this.overClocked ? "/OCactive_block00" : "/active_block00")];
+        MTexture active_block01 = GFX.Game[path + (this.overClocked ? "/OCactive_block01" : "/active_block01")];
         MTexture armend = GFX.Game[path + "/armend"];
 
         for (int j = 0; j < 4; j++)

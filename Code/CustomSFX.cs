@@ -10,6 +10,7 @@ public class CustomSFX
 
     // Lilly
     public const string game_lilly_dashed = "event:/vortexHelperEvents/game/lilly/dashed";
+    public const string game_lilly_OCdashed = "event:/vortexHelperEvents/game/lilly/OCdashed";
     public const string game_lilly_conveyor = "event:/vortexHelperEvents/game/lilly/arm_conveyor";
     public const string game_lilly_arm_impact = "event:/vortexHelperEvents/game/lilly/arm_impact";
 
