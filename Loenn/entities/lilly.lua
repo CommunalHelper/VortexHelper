@@ -49,6 +49,8 @@ lilly.placements = {
             height = 24,
             maxLength = 64,
             spriteDir = "",
+            overclocked = false,
+            armsGiveLiftSpeed = false,
             idleColor = "0061ff",
             climbedOnColor = "ff38f1",
             dashColor = "ff0033",
@@ -68,10 +70,10 @@ local color
 local function reloadSprites(entity)
     local spriteDir = (entity.spriteDir ~= "" and entity.spriteDir) and entity.spriteDir or defaultSpriteDir
 
-    block = spriteDir .. "/block00"
+    block = spriteDir .. (entity.overclocked and "/OCblock00" or "/block00")
     face = spriteDir .. "/face12"
     armend = spriteDir .. "/armend"
-    arm = spriteDir .. "/arm00"
+    arm = spriteDir .. (entity.overclocked and "/OCarm00" or "/arm00")
 
     color = entity.idleColor or { 0.0, 208 / 255, 1.0, 1.0 }
 end
