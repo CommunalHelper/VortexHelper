@@ -54,7 +54,6 @@ public class VortexHelperModule : EverestModule
         LavenderBooster.InitializeParticles();
         VortexBumper.InitializeParticles();
         BubbleWrapBlock.InitializeParticles();
-        Lilly.InitializeTextures();
     }
 
     public override void Load()

@@ -1,0 +1,5 @@
+/home/nathanc/.local/share/Steam/steamapps/common/Celeste/Mods/VortexHelper-dev/Code/obj/Debug/net7.0/VortexHelper.csproj.AssemblyReference.cache
+/home/nathanc/.local/share/Steam/steamapps/common/Celeste/Mods/VortexHelper-dev/Code/obj/Debug/net7.0/VortexHelper.GeneratedMSBuildEditorConfig.editorconfig
+/home/nathanc/.local/share/Steam/steamapps/common/Celeste/Mods/VortexHelper-dev/Code/obj/Debug/net7.0/VortexHelper.AssemblyInfoInputs.cache
+/home/nathanc/.local/share/Steam/steamapps/common/Celeste/Mods/VortexHelper-dev/Code/obj/Debug/net7.0/VortexHelper.AssemblyInfo.cs
+/home/nathanc/.local/share/Steam/steamapps/common/Celeste/Mods/VortexHelper-dev/Code/obj/Debug/net7.0/VortexHelper.csproj.CoreCompileInputs.cache
